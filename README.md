@@ -1,2 +1,2 @@
-# mnhn
-Genome wide annotation with deep CNN
+# Genome wide annotation with deep CNN
+

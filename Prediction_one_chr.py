@@ -11,7 +11,7 @@ import argparse
 from tensorflow import keras
 from ModuleLibrary.metrics import MCC, BA
 from ModuleLibrary.utils import load_data_one_chr
-from ModuleLibrary.generator import PredGenerator
+from ModuleLibrary.generators import PredGenerator
 
 def parse_arguments():
     parser = argparse.ArgumentParser()

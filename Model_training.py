@@ -10,7 +10,7 @@ python Model_training_full.py -r example -m myModel1 -e 30 -a
 import numpy as np
 import argparse
 import os
-from ModuleLibrary.generator import DataGeneratorFull
+from ModuleLibrary.generators import DataGenerator
 from ModuleLibrary.metrics import MCC, BA
 from ModuleLibrary.models import Model_dic
 from ModuleLibrary.hyperparameters import check_pointer, class_weights, early_stopping
@@ -74,19 +74,19 @@ def main():
                                                                               args.validation)
 
     # Generators
-    train_generator = DataGeneratorFull(indexes = train_indexes, 
-                                        labels = labels,
-                                        data = data, 
-                                        batch_size = args.batch_size,
-                                        window = window,
-                                        shuffle = True)
+    train_generator = DataGenerator(indexes = train_indexes, 
+                                    labels = labels,
+                                    data = data, 
+                                    batch_size = args.batch_size,
+                                    window = window,
+                                    shuffle = True)
 
-    validation_generator = DataGeneratorFull(indexes = val_indexes, 
-                                             labels = labels,
-                                             data = data, 
-                                             batch_size = args.batch_size,
-                                             window = window,
-                                             shuffle = True)
+    validation_generator = DataGenerator(indexes = val_indexes, 
+                                         labels = labels,
+                                         data = data, 
+                                         batch_size = args.batch_size,
+                                         window = window,
+                                         shuffle = True)
     
     # Model 
     model = Model_dic(window)[args.model]   
