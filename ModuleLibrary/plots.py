@@ -264,7 +264,6 @@ class Chromosome_prediction():
         for i, pred in enumerate(self.preds):
             name = self.files_list[i]
             name = name.replace('.npy','')
-            print(pred.shape)
             plt.plot(self.nuc[x:x+y], pred[x:x+y], label=name)
         plt.legend()
         plt.show()
