@@ -6,6 +6,7 @@ Created on Thu Jan 12 14:07 2022
 
 Creates an annotation file(.csv) from gff files
 
+Example of use :
 python Data_treatment/gff_to_csv.py  -o RNA -t mRNA
 """
 import argparse

@@ -6,7 +6,6 @@ Created on Tue Mar 1 10:53 2022
 
 Example of use :
 python Regression_parser.py
-
 """
 
 import numpy as np

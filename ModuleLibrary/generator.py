@@ -11,7 +11,7 @@ from ModuleLibrary.utils import get_complementary_strand_OH, one_hot_encoding_se
 
 class DataGenerator(tf.keras.utils.Sequence):
     '''
-    Generator for model training
+    !!! DEPRECATED !!!
     '''
     def __init__(self, list_IDs, labels, data, batch_size, window,
                   shuffle=True, fast=False):

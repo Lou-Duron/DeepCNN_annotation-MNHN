@@ -4,6 +4,7 @@
 Created on Tue Feb 22 16:18 2022
 @author: lou
 
+Example of use :
 python Data_treatment/one_hot_encode_DNA.py -p HomoSapiens37
 """
 import argparse

@@ -8,8 +8,8 @@ This program take an annotation file in gff format and creates
 as many files at gff format that there are chomosome with the
 relevant annotations.
 
-python Data_treatment/get_annotation_from_gff.py -i Data/Raw_data/GCF_009663435.1_Callithrix_jacchus_cj1700_1.1_genomic.gff -f Data/DNA/Callithrix/fasta -o Data/Annotations/Callithrix/annot
-python Data_treatment/get_annotation_from_gff.py -i Data/Raw_data/GCF_013052645.1_Mhudiblu_PPA_v0_genomic.gff -f Data/DNA/Callithrix/fasta -o Data/Annotations/Callithrix/annot
+Example of use :
+python Data_treatment/get_annotation_from_gff.py
 """
 
 import os

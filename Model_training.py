@@ -5,89 +5,102 @@ Created on Wed Jan 19 15:52 2022
 @author: lou
 
 Example of use :
-python Model_training.py -d multi2_exon_start -m myModel1 -a -r test
+python Model_training_full.py -r example -m myModel1 -e 30 -a
 """
 import numpy as np
 import argparse
 import os
-import pickle
-import random
-from ModuleLibrary.generator import DataGenerator
+from ModuleLibrary.generator import DataGeneratorFull
 from ModuleLibrary.metrics import MCC, BA
 from ModuleLibrary.models import Model_dic
 from ModuleLibrary.hyperparameters import check_pointer, class_weights, early_stopping
-from ModuleLibrary.utils import load_data
-from tensorflow.keras.mixed_precision import experimental as mixed_precision
+from ModuleLibrary.utils import load_data_multi_species
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-d', '--data',
-                        help="Data prefix")
     parser.add_argument('-r', '--results',
                         help="Results suffix")
     parser.add_argument('-m', '--model',
                         help="Model architecture to use")
     parser.add_argument('-e', '--epochs', default=30, type=int,
                         help="Number of epochs")
-    parser.add_argument('-b', '--batch_size', default=2048, type=int,
+    parser.add_argument('-w', '--window', default=2000, type=int,
+                        help="Window size")
+    parser.add_argument('-s', '--step', default=100, type=int,
+                        help="Step between windows")
+    parser.add_argument('-b', '--batch_size', default=1024, type=int,
                         help="Batch size")
     parser.add_argument('-v', '--validation', default=0.15, type=float,
                         help="Validation ratio")                    
-    parser.add_argument('-k', '--kernel', default=6, type=int,
-                        help="Kernel size of the convolution layers")
     parser.add_argument('-a', '--early', action='store_true', 
-                        help="Use early stopping")
-    parser.add_argument('-f', '--fast', action='store_true', 
-                        help="Fast generator but takes a lot of memory")              
+                        help="Use early stopping")          
     return parser.parse_args()
 
 
 def main():
+
     args = parse_arguments()
-    path = f'Results/{args.results}'
 
-    print('Loading partition')
-    with open(f'Input/{args.data}/dataset_infos.pkl', 'rb') as f:
-        dataset_infos = pickle.load(f)
-
-    labels = dataset_infos['labels']
-    window = dataset_infos['window']
-    ratio = dataset_infos['ratio']
-    species = dataset_infos['species'] 
-
-    IDs = list(labels.keys())
-    random.shuffle(IDs)
-
+    species_list = [#'Maca',
+                    'HS37', 
+                    #'Call', 
+                    #'LeCa',
+                    #'PanP', 
+                    #'Asia',
+                    #'ASM2', 
+                    #'ASM7',
+                    #'Clin', 
+                    #'Kami', 
+                    #'Mmul', 
+                    #'Panu',
+                    #'Tgel', 
+                    #'Cani',
+                    #'Dani',
+                    #'Equi',
+                    #'Feli',
+                    #'Gall',
+                    #'MusM',
+                    #'Orni'
+                    ]
+    
+    window = args.window
+    if window % 2 == 0:
+        window += 1
+    
     print('Loading data')
-    data = load_data(species, window, fast=args.fast, padding=True)
+    data, labels, ratio, train_indexes, val_indexes = load_data_multi_species(species_list, 
+                                                                              window, 
+                                                                              args.step, 
+                                                                              args.validation)
 
-    train_generator = DataGenerator(list_IDs = IDs[int(len(IDs)*args.validation):], 
-                                    labels = labels,
-                                    data = data, 
-                                    batch_size = args.batch_size,
-                                    window = window,
-                                    shuffle = True,
-                                    fast = args.fast)
+    # Generators
+    train_generator = DataGeneratorFull(indexes = train_indexes, 
+                                        labels = labels,
+                                        data = data, 
+                                        batch_size = args.batch_size,
+                                        window = window,
+                                        shuffle = True)
 
-    validation_generator = DataGenerator(list_IDs = IDs[:int(len(IDs)*args.validation)], 
-                                         labels = labels,
-                                         data = data, 
-                                         batch_size = args.batch_size,
-                                         window = window,
-                                         shuffle = True,
-                                         fast = args.fast)
-
-    try:
-        os.mkdir(path)
-    except:
-        print("\nOverwriting results\n")
-
-    # Model architecture
-    model = Model_dic(window, args.kernel)[args.model]   
+    validation_generator = DataGeneratorFull(indexes = val_indexes, 
+                                             labels = labels,
+                                             data = data, 
+                                             batch_size = args.batch_size,
+                                             window = window,
+                                             shuffle = True)
+    
+    # Model 
+    model = Model_dic(window)[args.model]   
 
     model.compile(loss='binary_crossentropy',
                   optimizer='adam',   
                   metrics=['accuracy', MCC, BA])
+
+
+    path = f'Results/{args.results}'
+    try:
+        os.mkdir(path)
+    except:
+        print("\nOverwriting results\n")
 
     # Hyperparameters and callbacks
     callbacks = [check_pointer(path)]
@@ -104,8 +117,7 @@ def main():
                         validation_data=validation_generator,
                         callbacks = callbacks,
                         verbose = 1, 
-                        class_weight = class_weights(ratio)
-                        )
+                        class_weight = class_weights(ratio))
 
     # Results saving
     print(f'\nSaving results in : {path}')

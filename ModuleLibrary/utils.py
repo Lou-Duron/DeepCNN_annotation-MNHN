@@ -6,7 +6,6 @@ Created on Wen Jan 26 10:47 2022
 """
 
 import numpy as np
-import pandas as pd
 import os
 import h5py
 
@@ -66,14 +65,14 @@ def one_hot_encoding_seq(X):
     X_one_hot = bool.astype('int8')
     return X_one_hot
 
-def load_data(species, window, fast=False, padding=True):
+def load_data(species, window, fast=False, padding=True): # DEPRECATED
     if fast:
         data = load_data_OH(species, window, padding)
     else:
         data = load_data_seq(species, window, padding)
     return data
 
-def load_data_OH(species, window, padding=True):
+def load_data_OH(species, window, padding=True): # DEPRECATED
     '''
     Takes a species ID and a window size and load the corresponding
     data to give to a generator. The data will be one hot encoded
@@ -97,7 +96,7 @@ def load_data_OH(species, window, padding=True):
                                                  sliding_window.shape[3],1)
     return data
 
-def load_data_seq(species, window, padding=True):
+def load_data_seq(species, window, padding=True): # DEPRECATED
     '''
     Alternative data loader.
     Slower but memory efficient.
@@ -140,22 +139,8 @@ def load_data_one_chr(species, chr, window, reverse=False, padding=True):
                                   sliding_window.shape[3],1)
     return data
 
-def load_data_full(window):
-    gene_start = np.load('Predictions/multi3_gene_start_pred.npy')
-    gene_stop = np.load('Predictions/multi3_gene_stop_pred.npy')
-    exon_start = np.load('Predictions/multi3_exon_start_pred.npy')
-    exon_stop = np.load('Predictions/multi3_exon_stop_pred.npy')
-    data = np.array([gene_start, gene_stop, exon_start, exon_stop])
-    data = np.reshape(data.flatten(order='F'), (data.shape[1],data.shape[0]))
-    data =  np.append(np.zeros((window//2,4),dtype='float32'), data, axis=0)
-    data = np.append(data, np.zeros((window//2,4),dtype='float32'), axis=0) 
-    data = sliding_window_view(data, (window,4), axis=(0,1))
-    data = data.reshape(data.shape[0],
-                        data.shape[2], 
-                        data.shape[3],1)
-    return data
     
-def load_data_multi_species(species_list, window, step):
+def load_data_multi_species(species_list, window, step, validation):
 
     data = [np.zeros((window//2,4),dtype='int8')]
     indexes = np.array([], dtype=int)
@@ -193,44 +178,12 @@ def load_data_multi_species(species_list, window, step):
     tmp = labels[indexes]
     ratio = len(tmp[tmp==0])/len(tmp[tmp==1])
 
-    return data, labels, indexes, ratio
+    np.random.shuffle(indexes)
 
-def load_data_HS(window, step):
+    train_indexes = indexes[int(len(indexes)*validation):]
+    val_indexes = indexes[:int(len(indexes)*validation)]
 
-    files = os.listdir(f'Data/DNA/HS37/one_hot')
-    files.sort()
-    files.remove(files[0]) # <- PRED chr1
-
-    data = [np.zeros((window//2,4),dtype='int8')]
-    indexes = np.array([], dtype=int)
-    labels = np.array([], dtype='int8')
-    total_len = 0
-
-    for f in files:
-        print(f)
-        chr = np.load(f'Data/DNA/HS37/one_hot/{f}')
-        data.append(chr)
-        data.append(np.zeros((window//2,4),dtype='int8'))
-
-        lab = np.load(f'Data/Positions/HS37/strand+/{f}')
-        labels = np.append(labels, lab)
-        labels = np.append(labels, np.zeros(window//2, dtype='int8'))
-
-        indexes = np.append(indexes, np.arange(total_len, total_len+len(chr)+1, step= step))
-        total_len += len(chr) + (window // 2)
-
-    data = np.concatenate(data, axis=0)
-    data = sliding_window_view(data, (window,4), axis=(0,1))
-    data = data.reshape(data.shape[0],
-                        data.shape[2], 
-                        data.shape[3],1)
-
-    labels = labels[:-(window//2)]
-    tmp = labels[indexes]
-    ratio = len(tmp[tmp==0])/len(tmp[tmp==1])
-
-    return data, labels, indexes, ratio
-
+    return data, labels, ratio, train_indexes, val_indexes
 
 def sliding_window_view(x, window_shape, axis=None, *,
                         subok=False, writeable=False):

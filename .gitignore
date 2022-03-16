@@ -15,7 +15,9 @@
 !/Results/**/.gitkeep
 
 /Archive/**
+!/Archive/**/
+!/Archive/**/.gitkeep
 
 /Other/**
 
-playgriound.iynb
+playground.ipynb

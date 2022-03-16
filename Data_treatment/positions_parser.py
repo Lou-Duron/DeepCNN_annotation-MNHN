@@ -6,7 +6,6 @@ Created on Mon Feb 21 11:21 2022
 
 Example of use :
 python Positions_parser.py -a GENE
-
 """
 
 import numpy as np

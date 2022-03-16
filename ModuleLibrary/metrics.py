@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Thu Feb 1 10:01:13 2022
-
+Created on Thu Feb 1 10:01 2022
 @author: lou
 
 	This module contains the custom losses or metrics that can be used to train or to evaluate a neural network.

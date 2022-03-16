@@ -5,7 +5,6 @@ Created on Mon Jan 24 15:30 2022
 @author: lou
 """
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, Callback
-import os
 
 def class_weights(ratio):
     cw = {0 : ((ratio + 1) / 2) / ratio, 1 : ((ratio + 1) / 2)}

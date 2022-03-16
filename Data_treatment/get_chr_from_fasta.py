@@ -7,6 +7,7 @@ Created on Thu Jan 11 09:06 2022
 This program take an genome in fasta format and creates
 as many files that there are chromosome.
 
+Example of use :
 python Data_treatment/get_chr_from_fasta.py
 """
 

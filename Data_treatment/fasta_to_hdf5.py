@@ -8,6 +8,7 @@ This program takes .fa or .fa.gz files and convert them to .hdf5 files.
 If the output directory is not specified, the hdf5 files will be created in
 the same directory as the fasta files.
 
+Example of use :
 python Data_treatment/fasta_to_hdf5.py
 """
 

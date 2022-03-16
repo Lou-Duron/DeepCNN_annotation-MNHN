@@ -1,8 +1,7 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """
-Created on Mon Jan 24 15:23:39 2022
-
+Created on Mon Jan 24 15:23 2022
 @author: lou
 """     
 
@@ -11,14 +10,10 @@ from tensorflow.keras.layers import Dropout, Flatten, BatchNormalization, Add
 from tensorflow.keras.layers import Dense, Conv2D, MaxPooling2D, LSTM, Reshape
 from tensorflow.keras import Input
 
-
-#from keras.layers import  Input
-import tensorflow.keras.backend as K
-
 def Model_dic(window):
     dic = {}
     dic['myModel1'] = myModel1(window)
-    dic['myModel2'] = myModel2(window) # TSS like
+    dic['myModel2'] = myModel2(window) 
     dic['dilated'] = dilated(window)
     dic['dilated2'] = dilated2(window)
     dic['dilatedValid'] = dilatedValid(window)
