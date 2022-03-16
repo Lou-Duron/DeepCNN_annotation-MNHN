@@ -140,7 +140,7 @@ def load_data_one_chr(species, chr, window, reverse=False, padding=True):
     return data
 
     
-def load_data_multi_species(species_list, window, step, validation):
+def load_data_multi_species(species_list, window, step, validation, mode):
 
     data = [np.zeros((window//2,4),dtype='int8')]
     indexes = np.array([], dtype=int)
@@ -161,7 +161,7 @@ def load_data_multi_species(species_list, window, step, validation):
             data.append(chr)
             data.append(np.zeros((window//2,4),dtype='int8'))
 
-            lab = np.load(f'Data/Positions/{species}/strand+/{f}')
+            lab = np.load(f'Data/Positions/{species}/{mode}/{f}')
             labels = np.append(labels, lab)
             labels = np.append(labels, np.zeros(window//2, dtype='int8'))
 
@@ -173,7 +173,7 @@ def load_data_multi_species(species_list, window, step, validation):
     data = data.reshape(data.shape[0],
                         data.shape[2], 
                         data.shape[3],1)
-
+ 
     labels = labels[:-(window//2)]
     tmp = labels[indexes]
     ratio = len(tmp[tmp==0])/len(tmp[tmp==1])

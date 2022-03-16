@@ -147,10 +147,11 @@ def prediction_density(pred_files, species, chr, annotation, win_range, mode='al
         plot.legend()
     plt.show
 
-def prediction_quality(pred_files, species, chr, annotation, mode='all'):
+def prediction_quality(pred_files, species, chr, mode='all'):
 
     positions = np.load(f'Data/Positions/{species}/{mode}/chr{chr}.npy')
             
+    figure, axis = plt.subplots(1, len(pred_files), constrained_layout=True, figsize=(len(pred_files)*5,4))
     for num,pred_file in enumerate(pred_files):
         pred = np.load(f'Predictions/{pred_file}')
         pred = pred.reshape(pred.shape[0])
@@ -163,16 +164,18 @@ def prediction_quality(pred_files, species, chr, annotation, mode='all'):
 
         pred_pos = pred[pos]
         pred_neg = pred[neg]
+        x = [pred_pos, pred_neg]
+        labels = [f'Inside', f'Outside']
 
-        mean_pos = np.mean(pred_pos)
-        mean_neg = np.mean(pred_neg)
-        
-        fig = plt.figure()
-        plt.title(name)
-        ax = fig.add_axes([0,0,1,1])
-        labels = ['Inside genes', 'Outside genes']
-        values = [mean_pos, mean_neg]
-        ax.bar(labels, values)
+        if len(pred_files) > 1:
+            plot = axis[num]
+        else:
+            plot = plt
+            plot.title(name)
+
+        plot.boxplot(x, labels=labels, showmeans=True, meanline=True, widths=0.6, showfliers=False)
+        if len(pred_files) > 1:
+            plot.set_title(name)
     plt.show
 
 class Chromosome_prediction():

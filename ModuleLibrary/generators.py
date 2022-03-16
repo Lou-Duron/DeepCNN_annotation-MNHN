@@ -7,6 +7,7 @@ Created on Wen Feb 23 9:53 2022
 
 import tensorflow as tf
 import numpy as np
+
 class DataGenerator(tf.keras.utils.Sequence):
 
     def __init__(self, indexes, data, labels, 

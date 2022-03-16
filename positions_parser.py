@@ -5,7 +5,7 @@ Created on Mon Feb 21 11:21 2022
 @author: lou
 
 Example of use :
-python Positions_parser.py -a GENE
+python positions_parser.py -a GENE
 """
 
 import numpy as np
@@ -22,18 +22,18 @@ def parse_arguments():
 
 def get_species_list():
     list = [#'Maca', # 88 artefacts
-            'HS37', # 6 artefacts
+            #'HS37', # 6 artefacts
             #'Call', # 11 artefacts
             #'LeCa', # 1 Artefact
             #'PanP', # 34 artefacts
             #'Asia', # 13 artefacts
             #'ASM2', #  416 artefacts
-            #'ASM7', # 32 artefacts
-            #'Clin', # 26 artefacts <--- Pred
-            #'Kami', # 49 artefacts
-            #'Mmul', # 4 artefacts
-            #'Panu', # 58 artefacts
-            #'Tgel' # 212 artefacts
+            'ASM7', # 32 artefacts
+            'Clin', # 26 artefacts <--- Pred
+            'Kami', # 49 artefacts
+            'Mmul', # 4 artefacts
+            'Panu', # 58 artefacts
+            'Tgel' # 212 artefacts
             ] 
     return list
 
@@ -44,7 +44,7 @@ def main():
 
     for species in species_list:
 
-        path = f'Data/Positions/{species}/exon'
+        path = f'Data/Positions/{species}/gene_full'
         try:
             os.mkdir(path)
         except:
@@ -53,8 +53,7 @@ def main():
         print(f'\n{species}')
         # Get annotation dataframe and remove duplicates
         annot = pd.read_csv(f'Data/Annotations/{species}/{args.annotation}.csv', sep = ',')
-        annot = annot.drop_duplicates(subset=['chr', 'start', 'strand'], keep='last') 
-        annot = annot.drop_duplicates(subset=['chr', 'stop', 'strand'], keep='last') 
+        annot = annot.drop_duplicates(subset=['chr', 'start','stop', 'strand'], keep='last') 
 
         # Get list of chromosome
         chromosomes = os.listdir(f'Data/DNA/{species}/hdf5')
@@ -92,12 +91,15 @@ def main():
 
             index_pos5 = get_indexes_vec(ANNOT5_start_index,ANNOT5_stop_index)
             index_pos5 = np.concatenate(index_pos5)
+            index_pos5 = np.unique(index_pos5)
 
             index_pos3 = get_indexes_vec(ANNOT3_start_index,ANNOT3_stop_index)
             index_pos3 = np.concatenate(index_pos3)
+            index_pos3 = np.unique(index_pos3)
 
             index_pos = np.append(index_pos5, index_pos3)
             index_pos = np.unique(index_pos)
+            
 
             index_full = np.zeros(len(DNA), dtype=bool)
             def fill(x):

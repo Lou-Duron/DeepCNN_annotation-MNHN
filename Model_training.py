@@ -5,7 +5,7 @@ Created on Wed Jan 19 15:52 2022
 @author: lou
 
 Example of use :
-python Model_training_full.py -r example -m myModel1 -e 30 -a
+python Model_training_full.py -r example -m myModel1 -e 30 -a -o gene_full
 """
 import numpy as np
 import argparse
@@ -20,6 +20,8 @@ def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument('-r', '--results',
                         help="Results suffix")
+    parser.add_argument('-o', '--mode',
+                        help="Annotation mode")
     parser.add_argument('-m', '--model',
                         help="Model architecture to use")
     parser.add_argument('-e', '--epochs', default=30, type=int,
@@ -35,7 +37,6 @@ def parse_arguments():
     parser.add_argument('-a', '--early', action='store_true', 
                         help="Use early stopping")          
     return parser.parse_args()
-
 
 def main():
 
@@ -71,9 +72,9 @@ def main():
     data, labels, ratio, train_indexes, val_indexes = load_data_multi_species(species_list, 
                                                                               window, 
                                                                               args.step, 
-                                                                              args.validation)
+                                                                              args.validation,
+                                                                              args.mode)
 
-    # Generators
     train_generator = DataGenerator(indexes = train_indexes, 
                                     labels = labels,
                                     data = data, 
@@ -87,7 +88,8 @@ def main():
                                          batch_size = args.batch_size,
                                          window = window,
                                          shuffle = True)
-    
+
+
     # Model 
     model = Model_dic(window)[args.model]   
 
