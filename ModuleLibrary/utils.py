@@ -7,7 +7,7 @@ Created on Wen Jan 26 10:47 2022
 
 import numpy as np
 import os
-import h5py
+import pandas as pd
 
 def get_complementary_strand_OH(arr):
     '''
@@ -65,61 +65,6 @@ def one_hot_encoding_seq(X):
     X_one_hot = bool.astype('int8')
     return X_one_hot
 
-def load_data(species, window, fast=False, padding=True): # DEPRECATED
-    if fast:
-        data = load_data_OH(species, window, padding)
-    else:
-        data = load_data_seq(species, window, padding)
-    return data
-
-def load_data_OH(species, window, padding=True): # DEPRECATED
-    '''
-    Takes a species ID and a window size and load the corresponding
-    data to give to a generator. The data will be one hot encoded
-    and loaded in a vectorized sliding window for better performances.
-    '''
-    data = {}
-    for s in species:
-        data[s] = {}
-        files = os.listdir(f'Data/DNA/{s}/one_hot')
-        print(s)
-        for file in files:
-            f = np.load(f'Data/DNA/{s}/one_hot/{file}')
-            if padding:
-                f = np.append(np.zeros((window//2,4),dtype='int8'), f, axis=0)
-                f = np.append(f, np.zeros((window//2,4),dtype='int8'), axis=0)
-            id = file.replace('.npy','')
-            id = id.replace('chr','')
-            sliding_window = sliding_window_view(f, (window,4), axis=(0,1))
-            data[s][id] = sliding_window.reshape(sliding_window.shape[0],
-                                                 sliding_window.shape[2], 
-                                                 sliding_window.shape[3],1)
-    return data
-
-def load_data_seq(species, window, padding=True): # DEPRECATED
-    '''
-    Alternative data loader.
-    Slower but memory efficient.
-    '''
-    data = {}
-    for s in species:
-        data[s] = {}
-        files = os.listdir(f'Data/DNA/{s}/hdf5')
-        print(s)
-        for file in files:
-            f = h5py.File(f'Data/DNA/{s}/hdf5/{file}','r')
-            DNA = np.array(f['data'])
-            f.close()
-            DNA = DNA.reshape(DNA.shape[0],)
-            DNA = DNA.astype('int8')
-            if padding:
-                DNA = np.append(np.zeros(window//2,dtype='int8'), DNA)
-                DNA = np.append(DNA, np.zeros(window//2,dtype='int8'))
-            id = file.replace('.hdf5','')
-            id = id.replace('chr','')                                
-            data[s][id] = sliding_window_view(DNA, window)
-    return data
-
 def load_data_one_chr(species, chr, window, reverse=False, padding=True):
     '''
     Takes a species ID, a chromosome ID and a window size and load the 
@@ -139,40 +84,130 @@ def load_data_one_chr(species, chr, window, reverse=False, padding=True):
                                   sliding_window.shape[3],1)
     return data
 
-    
-def load_data_multi_species(species_list, window, step, validation, mode):
+def load_data_features(species_list, window, ratio, validation, features, mode):
 
-    data = [np.zeros((window//2,4),dtype='int8')]
+    data = np.zeros((window//2,4),dtype='int8')
     indexes = np.array([], dtype=int)
     labels = np.array([], dtype='int8')
     total_len = 0
 
     for species in species_list:
-
         files = os.listdir(f'Data/DNA/{species}/one_hot')
-        print(species)
+        annot = pd.read_csv(f'Data/Annotations/{species}/{features}.csv', sep = ',')
+        annot = annot.drop_duplicates(subset=['chr', 'stop', 'start', 'strand'], keep='last') 
         if len(species_list) == 1:
             files.sort()
             files.remove(files[0])
+        print('')
 
-        for f in files:
-            print(f)
+        for i, f in enumerate(files):
+            print(f'{species} : {i+1}/{len(files)}', end = '\r')
+            
             chr = np.load(f'Data/DNA/{species}/one_hot/{f}')
-            data.append(chr)
-            data.append(np.zeros((window//2,4),dtype='int8'))
+            data = np.append(data, chr, axis=0)
+            data = np.append(data, np.zeros((window//2,4),dtype='int8'), axis=0)
 
-            lab = np.load(f'Data/Positions/{species}/{mode}/{f}')
+            ANNOT = annot[(annot.chr == f.replace('.npy','') )]
+            ANNOT = ANNOT[(ANNOT.strand == '+')]
+        
+            if mode == 'start':
+                feature_pos = np.unique(ANNOT['start'].values)
+            elif mode == 'stop':
+                feature_pos = np.unique(ANNOT['stop'].values)
+            feature_pos = feature_pos - 1
+
+            lab = np.zeros(len(chr), dtype='int8')
+
+            def fill(x):
+                lab[x] = 1
+            fill_vec = np.frompyfunc(fill, 1,0)
+            fill_vec(feature_pos)
+
+            labels = np.append(labels, lab)
+            labels = np.append(labels, np.zeros(window//2, dtype='int8'))
+
+            indexes_chr = np.arange(len(chr))
+            indexes_to_remove = np.array([], dtype = int)
+            positions = np.unique(feature_pos)
+
+            for i in positions:
+                range_to_remove = np.arange(i - window, i + window + 1, dtype = int)
+                indexes_to_remove = np.append(indexes_to_remove, range_to_remove)
+            indexes_to_remove = indexes_to_remove[indexes_to_remove < len(chr)-1]
+            indexes_chr = np.delete(indexes_chr, np.unique(indexes_to_remove))
+
+            np.random.shuffle(indexes_chr)
+
+            indexes_chr = np.append(positions, indexes_chr[:len(positions)*ratio])
+
+            
+
+            indexes_chr = indexes_chr + total_len
+            indexes = np.append(indexes, indexes_chr)
+            total_len += len(chr) + (window // 2)
+
+    data = sliding_window_view(data, (window,4), axis=(0,1))
+    data = data.reshape(data.shape[0],
+                        data.shape[2], 
+                        data.shape[3],1)
+ 
+    labels = labels[:-(window//2)]
+
+    np.random.shuffle(indexes)
+
+    train_indexes = indexes[int(len(indexes)*validation):]
+    val_indexes = indexes[:int(len(indexes)*validation)]
+
+    return data, labels, train_indexes, val_indexes
+    
+def load_data_gene_coverage(species_list, window, step, validation):
+
+    dna = np.zeros((window//2,4),dtype='int8')
+    pred = np.zeros((window//2,4),dtype='int8')
+    indexes = np.array([], dtype=int)
+    labels = np.array([], dtype='int8')
+    total_len = 0
+
+    for species in species_list:
+        files = os.listdir(f'Data/DNA/{species}/one_hot')
+        if len(species_list) == 1:
+            files.sort()
+            files.remove(files[0])
+        print('')
+
+        for i, f in enumerate(files):
+            print(f'{species} : {i+1}/{len(files)}', end = '\r')
+
+            chr = np.load(f'Data/DNA/{species}/one_hot/{f}')
+            dna = np.append(dna, chr, axis=0)
+            dna = np.append(dna, np.zeros((window//2,4),dtype='int8'), axis=0)
+
+            lab = np.load(f'Data/Positions/{species}/strand+/{f}')
             labels = np.append(labels, lab)
             labels = np.append(labels, np.zeros(window//2, dtype='int8'))
 
             indexes = np.append(indexes, np.arange(total_len, total_len+len(chr)+1, step= step))
             total_len += len(chr) + (window // 2)
 
-    data = np.concatenate(data, axis=0)
-    data = sliding_window_view(data, (window,4), axis=(0,1))
-    data = data.reshape(data.shape[0],
-                        data.shape[2], 
-                        data.shape[3],1)
+            gene_start = np.load(f'Predictions/{species}_gene_start/{f}')
+            gene_stop = np.load(f'Predictions/{species}_gene_stop/{f}')
+            exon_start = np.load(f'Predictions/{species}_exon_start/{f}')
+            exon_stop = np.load(f'Predictions/{species}_exon_stop/{f}')
+
+            chr_pred = np.array([gene_start, gene_stop, exon_start, exon_stop])
+            chr_pred = np.reshape(chr_pred.flatten(order='F'), (chr_pred.shape[1],chr_pred.shape[0]))
+            pred = np.append(pred, chr_pred, axis=0)
+            pred = np.append(pred, np.zeros((window//2,4),dtype='int8'), axis=0)
+
+    dna = sliding_window_view(dna, (window,4), axis=(0,1))
+    dna = dna.reshape(dna.shape[0],
+                      dna.shape[2], 
+                      dna.shape[3],1)
+
+    pred = sliding_window_view(pred, (window,4), axis=(0,1))
+    pred = pred.reshape(pred.shape[0],
+                      pred.shape[2], 
+                      pred.shape[3],1)                  
  
     labels = labels[:-(window//2)]
     tmp = labels[indexes]
@@ -183,7 +218,7 @@ def load_data_multi_species(species_list, window, step, validation, mode):
     train_indexes = indexes[int(len(indexes)*validation):]
     val_indexes = indexes[:int(len(indexes)*validation)]
 
-    return data, labels, ratio, train_indexes, val_indexes
+    return dna, pred, labels, ratio, train_indexes, val_indexes
 
 def sliding_window_view(x, window_shape, axis=None, *,
                         subok=False, writeable=False):

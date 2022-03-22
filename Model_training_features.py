@@ -5,37 +5,37 @@ Created on Wed Jan 19 15:52 2022
 @author: lou
 
 Example of use :
-python Model_training_full.py -r example -m myModel1 -e 30 -a -o gene_full
+python Model_training_features.py -s genesHS37 -m myModel1 -f GENE -d start
 """
 import numpy as np
 import argparse
 import os
-from ModuleLibrary.generators import DataGenerator
+from ModuleLibrary.generators import Generator_Features
 from ModuleLibrary.metrics import MCC, BA
 from ModuleLibrary.models import Model_dic
 from ModuleLibrary.hyperparameters import check_pointer, class_weights, early_stopping
-from ModuleLibrary.utils import load_data_multi_species
+from ModuleLibrary.utils import load_data_features
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-r', '--results',
+    parser.add_argument('-s', '--results',
                         help="Results suffix")
-    parser.add_argument('-o', '--mode',
-                        help="Annotation mode")
     parser.add_argument('-m', '--model',
                         help="Model architecture to use")
+    parser.add_argument('-f', '--features', default='GENE',
+                        help="Features to use")
+    parser.add_argument('-d', '--mode', default='start',
+                        help="mode to use")
+    parser.add_argument('-r', '--ratio', default=100, type=int,
+                        help="Labels ratio")
     parser.add_argument('-e', '--epochs', default=30, type=int,
                         help="Number of epochs")
-    parser.add_argument('-w', '--window', default=2000, type=int,
+    parser.add_argument('-w', '--window', default=300, type=int,
                         help="Window size")
-    parser.add_argument('-s', '--step', default=100, type=int,
-                        help="Step between windows")
-    parser.add_argument('-b', '--batch_size', default=1024, type=int,
+    parser.add_argument('-b', '--batch_size', default=2048, type=int,
                         help="Batch size")
     parser.add_argument('-v', '--validation', default=0.15, type=float,
-                        help="Validation ratio")                    
-    parser.add_argument('-a', '--early', action='store_true', 
-                        help="Use early stopping")          
+                        help="Validation ratio")    
     return parser.parse_args()
 
 def main():
@@ -69,25 +69,26 @@ def main():
         window += 1
     
     print('Loading data')
-    data, labels, ratio, train_indexes, val_indexes = load_data_multi_species(species_list, 
-                                                                              window, 
-                                                                              args.step, 
-                                                                              args.validation,
-                                                                              args.mode)
+    data, labels,  train_indexes, val_indexes = load_data_features(species_list, 
+                                                                    window, 
+                                                                    args.ratio, 
+                                                                    args.validation,
+                                                                    args.features,
+                                                                    args.mode)
 
-    train_generator = DataGenerator(indexes = train_indexes, 
-                                    labels = labels,
-                                    data = data, 
-                                    batch_size = args.batch_size,
-                                    window = window,
-                                    shuffle = True)
-
-    validation_generator = DataGenerator(indexes = val_indexes, 
+    train_generator = Generator_Features(indexes = train_indexes, 
                                          labels = labels,
                                          data = data, 
                                          batch_size = args.batch_size,
                                          window = window,
                                          shuffle = True)
+
+    val_generator = Generator_Features(indexes = val_indexes, 
+                                       labels = labels,
+                                       data = data, 
+                                       batch_size = args.batch_size,
+                                       window = window,
+                                       shuffle = True)
 
 
     # Model 
@@ -105,10 +106,7 @@ def main():
         print("\nOverwriting results\n")
 
     # Hyperparameters and callbacks
-    callbacks = [check_pointer(path)]
-
-    if args.early:
-        callbacks.append(early_stopping())
+    callbacks = [check_pointer(path),early_stopping()]
 
     model.summary() 
 
@@ -116,10 +114,10 @@ def main():
     history = model.fit(train_generator,
                         epochs = args.epochs,
                         batch_size =  args.batch_size,
-                        validation_data=validation_generator,
+                        validation_data = val_generator,
                         callbacks = callbacks,
                         verbose = 1, 
-                        class_weight = class_weights(ratio))
+                        class_weight = class_weights(args.ratio))
 
     # Results saving
     print(f'\nSaving results in : {path}')

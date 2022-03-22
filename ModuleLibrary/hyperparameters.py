@@ -11,6 +11,7 @@ def class_weights(ratio):
     print(f'Class weights : {cw}')
     return cw
 
+
 def check_pointer(path):
 
     checkpointer = ModelCheckpoint(filepath=f'{path}/best_metrics_model.hdf5',
@@ -26,7 +27,7 @@ def early_stopping():
 
     early = EarlyStopping(monitor='val_loss', 
                             min_delta=0, 
-                            patience=8, 
+                            patience=5, 
                             verbose=0, 
                             mode='min',
                             restore_best_weights=True)

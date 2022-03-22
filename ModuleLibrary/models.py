@@ -7,7 +7,7 @@ Created on Mon Jan 24 15:23 2022
 
 from tensorflow.keras.models import Sequential, Model
 from tensorflow.keras.layers import Dropout, Flatten, BatchNormalization, Add
-from tensorflow.keras.layers import Dense, Conv2D, MaxPooling2D, LSTM, Reshape
+from tensorflow.keras.layers import Dense, Conv2D, MaxPooling2D, LSTM, Reshape, Concatenate
 from tensorflow.keras import Input
 
 def Model_dic(window):
@@ -25,9 +25,79 @@ def Model_dic(window):
     dic['dilated5'] = dilated5(window)
     dic['custom'] = custom(window)
     dic['smallcustom'] = smallcustom(window)
+    dic['multi'] = multi(window)
+    dic['test'] = test(window)
 
     return dic
 
+
+def test(window):
+    dna = Input(shape=(window, 4, 1))
+    pred = Input(shape=(window, 4, 1))
+    
+    conv1 = Conv2D(32, kernel_size=(6,4), name= 'DNAconv1',activation='relu', padding='valid')(dna)
+    conv1 = Dropout(0.2)(conv1)
+    conv1 = BatchNormalization()(conv1)
+    conv1 =  MaxPooling2D((2,1),padding='same')(conv1)
+
+    conv2 = Conv2D(32, kernel_size=(6,1), name= 'DNAconv2', activation='relu', padding='valid')(conv1)
+    conv2 = Dropout(0.2)(conv2)
+    conv2 = BatchNormalization()(conv2)
+    conv2 =  MaxPooling2D((2,1),padding='same')(conv2)
+
+    conv3 = Conv2D(32, kernel_size=(6,1), name= 'DNAconv3', activation='relu', padding='valid')(conv2)
+    conv3 = Dropout(0.2)(conv3)
+    conv3 = BatchNormalization()(conv3)
+    conv3_dna =  MaxPooling2D((2,1),padding='same')(conv3)
+
+    conv1 = Conv2D(32, kernel_size=(6,1), name= 'PREDconv1', activation='relu', padding='valid')(pred)
+    conv1 = Dropout(0.2)(conv1)
+    conv1 = BatchNormalization()(conv1)
+    conv1 =  MaxPooling2D((2,1),padding='same')(conv1)
+
+    conv2 = Conv2D(32, kernel_size=(6,1), name= 'PREDconv2', activation='relu', padding='valid')(conv1)
+    conv2 = Dropout(0.2)(conv2)
+    conv2 = BatchNormalization()(conv2)
+    conv2 =  MaxPooling2D((2,1),padding='same')(conv2)
+
+    conv3 = Conv2D(32, kernel_size=(6,1), name= 'PREDconv3', activation='relu', padding='valid')(conv2)
+    conv3 = Dropout(0.2)(conv3)
+    conv3 = BatchNormalization()(conv3)
+    conv3_pred =  MaxPooling2D((2,1),padding='same')(conv3)
+
+    x = Concatenate(axis=2)([conv3_dna,conv3_pred])
+
+    dil1 = Conv2D(32, kernel_size=(6,5), name= 'PREDdil1', activation='relu', padding='same', dilation_rate=(2, 1))(x)
+    dil1 = Dropout(0.2)(dil1)
+    dil1 = BatchNormalization()(dil1)
+
+    dil2 = Conv2D(32, kernel_size=(6,5), name= 'PREDdil2', activation='relu', padding='same', dilation_rate=(4, 1))(x)
+    dil2 = Dropout(0.2)(dil2)
+    dil2 = BatchNormalization()(dil2)
+
+    dil3 = Conv2D(32, kernel_size=(6,5), name= 'PREDdil3', activation='relu', padding='same', dilation_rate=(8, 1))(x)
+    dil3 = Dropout(0.2)(dil3)
+    dil3 = BatchNormalization()(dil3)
+
+    dil4 = Conv2D(32, kernel_size=(6,5), name= 'PREDdil4', activation='relu', padding='same', dilation_rate=(16, 1))(x)
+    dil4 = Dropout(0.2)(dil4)
+    dil4 = BatchNormalization()(dil4)
+
+    dil5 = Conv2D(32, kernel_size=(6,5), name= 'PREDdil5', activation='relu', padding='same', dilation_rate=(32, 1))(x)
+    dil5 = Dropout(0.2)(dil5)
+    dil5 = BatchNormalization()(dil5)
+
+    x = Add()([dil1, dil2, dil3, dil4, dil5])
+
+    x = Flatten()(x)
+
+    z = Dense(64, activation = 'relu')(x)
+
+    output = Dense(1, activation='sigmoid')(z)
+
+    model = Model([dna, pred], output)
+
+    return model
 
 def myModel1(window):
     
@@ -144,6 +214,58 @@ def dilated(window):
 
     return model
 
+def multi(window):
+    dna_input = Input(shape=(window, 4, 1))
+    
+    conv1 = Conv2D(32, kernel_size=(3,4), activation='relu', padding='valid')(dna_input)
+    conv1 = Dropout(0.2)(conv1)
+    conv1 = BatchNormalization()(conv1)
+    conv1 =  MaxPooling2D((2,1),padding='same')(conv1)
+
+    conv2 = Conv2D(32, kernel_size=(6,1), activation='relu', padding='valid')(conv1)
+    conv2 = Dropout(0.2)(conv2)
+    conv2 = BatchNormalization()(conv2)
+    conv2 =  MaxPooling2D((2,1),padding='same')(conv2)
+
+    conv3 = Conv2D(32, kernel_size=(6,1), activation='relu', padding='valid')(conv2)
+    conv3 = Dropout(0.2)(conv3)
+    conv3 = BatchNormalization()(conv3)
+    conv3 =  MaxPooling2D((2,1),padding='same')(conv3)
+
+    dil1 = Conv2D(32, kernel_size=(6,1), activation='relu', padding='same', dilation_rate=(2, 1))(conv3)
+    dil1 = Dropout(0.2)(dil1)
+    dil1 = BatchNormalization()(dil1)
+
+    dil2 = Conv2D(32, kernel_size=(6,1), activation='relu', padding='same', dilation_rate=(4, 1))(dil1)
+    dil2 = Dropout(0.2)(dil2)
+    dil2 = BatchNormalization()(dil2)
+
+    x = Add()([dil1, dil2])
+
+    dil3 = Conv2D(32, kernel_size=(6,1), activation='relu', padding='same', dilation_rate=(8, 1))(x)
+    dil3 = Dropout(0.2)(dil3)
+    dil3 = BatchNormalization()(dil3)
+
+    x = Add()([dil1, dil2, dil3])
+
+    dil4 = Conv2D(32, kernel_size=(6,1), activation='relu', padding='same', dilation_rate=(16, 1))(x)
+    dil4 = Dropout(0.2)(dil4)
+    dil4 = BatchNormalization()(dil4)
+
+    x = Add()([dil1, dil2, dil3, dil4])
+
+    dil5 = Conv2D(32, kernel_size=(6,1), activation='relu', padding='same', dilation_rate=(32, 1))(x)
+    dil5 = Dropout(0.2)(dil5)
+    dil5 = BatchNormalization()(dil5)
+
+    x = Flatten()(dil5)
+    x = Dense(64, activation = 'relu')(x)
+
+    output = Dense(2, activation='sigmoid')(x)
+    model = Model([dna_input], output)
+
+    return model
+
 def dilated2(window):
     dna_input = Input(shape=(window, 4, 1))
     
@@ -247,7 +369,6 @@ def dilatedValid(window):
     model = Model([dna_input], output)
 
     return model
-
 
 def dilatedValid2(window):
     dna_input = Input(shape=(window, 4, 1))
@@ -674,6 +795,275 @@ def smallcustom(window):
 
     x = Flatten()(dil4)
     x = Dense(64, activation = 'relu')(x)
+
+    output = Dense(1, activation='sigmoid')(x)
+    model = Model([dna_input], output)
+
+    return model
+
+def dilatedtest1(window):
+    dna_input = Input(shape=(window, 4, 1))
+    
+    conv1 = Conv2D(32, kernel_size=(6,4), activation='relu', padding='valid')(dna_input)
+    conv1 = Dropout(0.2)(conv1)
+    conv1 = BatchNormalization()(conv1)
+    conv1 =  MaxPooling2D((2,1),padding='same')(conv1)
+
+    conv2 = Conv2D(32, kernel_size=(6,1), activation='relu', padding='valid')(conv1)
+    conv2 = Dropout(0.2)(conv2)
+    conv2 = BatchNormalization()(conv2)
+    conv2 =  MaxPooling2D((2,1),padding='same')(conv2)
+
+    conv3 = Conv2D(32, kernel_size=(6,1), activation='relu', padding='valid')(conv2)
+    conv3 = Dropout(0.2)(conv3)
+    conv3 = BatchNormalization()(conv3)
+    conv3 =  MaxPooling2D((2,1),padding='same')(conv3)
+
+    dil1 = Conv2D(32, kernel_size=(6,1), activation='relu', padding='same', dilation_rate=(2, 1))(conv3)
+    dil1 = Dropout(0.2)(dil1)
+    dil1 = BatchNormalization()(dil1)
+
+    dil2 = Conv2D(32, kernel_size=(6,1), activation='relu', padding='same', dilation_rate=(4, 1))(conv3)
+    dil2 = Dropout(0.2)(dil2)
+    dil2 = BatchNormalization()(dil2)
+
+    dil3 = Conv2D(32, kernel_size=(6,1), activation='relu', padding='same', dilation_rate=(8, 1))(conv3)
+    dil3 = Dropout(0.2)(dil3)
+    dil3 = BatchNormalization()(dil3)
+
+
+    dil4 = Conv2D(32, kernel_size=(6,1), activation='relu', padding='same', dilation_rate=(16, 1))(conv3)
+    dil4 = Dropout(0.2)(dil4)
+    dil4 = BatchNormalization()(dil4)
+
+
+    dil5 = Conv2D(32, kernel_size=(6,1), activation='relu', padding='same', dilation_rate=(32, 1))(conv3)
+    dil5 = Dropout(0.2)(dil5)
+    dil5 = BatchNormalization()(dil5)
+
+    x = Add()([dil1, dil2, dil3, dil4, dil5])
+
+    x = Flatten()(dil5)
+    x = Dense(64, activation = 'relu')(x)
+
+    output = Dense(1, activation='sigmoid')(x)
+    model = Model([dna_input], output)
+
+    return model
+
+def dilatedtest2(window):
+    dna_input = Input(shape=(window, 4, 1))
+    
+    conv1 = Conv2D(32, kernel_size=(6,4), activation='relu', padding='valid')(dna_input)
+    conv1 = Dropout(0.2)(conv1)
+    conv1 = BatchNormalization()(conv1)
+    conv1 =  MaxPooling2D((2,1),padding='same')(conv1)
+
+    conv2 = Conv2D(32, kernel_size=(6,1), activation='relu', padding='valid')(conv1)
+    conv2 = Dropout(0.2)(conv2)
+    conv2 = BatchNormalization()(conv2)
+    conv2 =  MaxPooling2D((2,1),padding='same')(conv2)
+
+    conv3 = Conv2D(32, kernel_size=(6,1), activation='relu', padding='valid')(conv2)
+    conv3 = Dropout(0.2)(conv3)
+    conv3 = BatchNormalization()(conv3)
+    conv3 =  MaxPooling2D((2,1),padding='same')(conv3)
+
+    dil1 = Conv2D(32, kernel_size=(6,1), activation='relu', padding='same', dilation_rate=(2, 1))(conv3)
+    dil1 = Dropout(0.2)(dil1)
+    dil1 = BatchNormalization()(dil1)
+
+    dil2 = Conv2D(32, kernel_size=(6,1), activation='relu', padding='same', dilation_rate=(4, 1))(conv3)
+    dil2 = Dropout(0.2)(dil2)
+    dil2 = BatchNormalization()(dil2)
+
+    dil3 = Conv2D(32, kernel_size=(6,1), activation='relu', padding='same', dilation_rate=(8, 1))(conv3)
+    dil3 = Dropout(0.2)(dil3)
+    dil3 = BatchNormalization()(dil3)
+
+
+    dil4 = Conv2D(32, kernel_size=(6,1), activation='relu', padding='same', dilation_rate=(16, 1))(conv3)
+    dil4 = Dropout(0.2)(dil4)
+    dil4 = BatchNormalization()(dil4)
+
+
+    dil5 = Conv2D(32, kernel_size=(6,1), activation='relu', padding='same', dilation_rate=(32, 1))(conv3)
+    dil5 = Dropout(0.2)(dil5)
+    dil5 = BatchNormalization()(dil5)
+
+    x = Add()([dil1, dil2, dil3, dil4, dil5])
+
+    convfinal = Conv2D(64, kernel_size=(1,1), activation='relu', padding='valid')(x)
+    convfinal = Dropout(0.2)(convfinal)
+    convfinal = BatchNormalization()(convfinal)
+
+    x = Flatten()(dil5)
+    x = Dense(64, activation = 'relu')(x)
+
+    output = Dense(1, activation='sigmoid')(x)
+    model = Model([dna_input], output)
+
+    return model
+
+def dilatedtest3(window):
+    dna_input = Input(shape=(window, 4, 1))
+    
+    conv1 = Conv2D(32, kernel_size=(6,4), activation='relu', padding='valid')(dna_input)
+    conv1 = Dropout(0.2)(conv1)
+    conv1 = BatchNormalization()(conv1)
+    conv1 =  MaxPooling2D((2,1),padding='same')(conv1)
+
+    conv2 = Conv2D(32, kernel_size=(6,1), activation='relu', padding='valid')(conv1)
+    conv2 = Dropout(0.2)(conv2)
+    conv2 = BatchNormalization()(conv2)
+    conv2 =  MaxPooling2D((2,1),padding='same')(conv2)
+
+    conv3 = Conv2D(32, kernel_size=(6,1), activation='relu', padding='valid')(conv2)
+    conv3 = Dropout(0.2)(conv3)
+    conv3 = BatchNormalization()(conv3)
+    conv3 =  MaxPooling2D((2,1),padding='same')(conv3)
+
+    dil1 = Conv2D(32, kernel_size=(6,1), activation='relu', padding='same', dilation_rate=(2, 1))(conv3)
+    dil1 = Dropout(0.2)(dil1)
+    dil1 = BatchNormalization()(dil1)
+
+    dil2 = Conv2D(32, kernel_size=(6,1), activation='relu', padding='same', dilation_rate=(4, 1))(conv3)
+    dil2 = Dropout(0.2)(dil2)
+    dil2 = BatchNormalization()(dil2)
+
+    dil3 = Conv2D(32, kernel_size=(6,1), activation='relu', padding='same', dilation_rate=(8, 1))(conv3)
+    dil3 = Dropout(0.2)(dil3)
+    dil3 = BatchNormalization()(dil3)
+
+
+    dil4 = Conv2D(32, kernel_size=(6,1), activation='relu', padding='same', dilation_rate=(16, 1))(conv3)
+    dil4 = Dropout(0.2)(dil4)
+    dil4 = BatchNormalization()(dil4)
+
+
+    dil5 = Conv2D(32, kernel_size=(6,1), activation='relu', padding='same', dilation_rate=(32, 1))(conv3)
+    dil5 = Dropout(0.2)(dil5)
+    dil5 = BatchNormalization()(dil5)
+
+    x = Add()([dil1, dil2, dil3, dil4, dil5])
+
+    convfinal = Conv2D(64, kernel_size=(1,1), activation='relu', padding='valid')(x)
+    convfinal = Dropout(0.2)(convfinal)
+    convfinal = BatchNormalization()(convfinal)
+
+    x = Flatten()(convfinal)
+
+    output = Dense(1, activation='sigmoid')(x)
+    model = Model([dna_input], output)
+
+    return model
+
+def dilatedtest4(window):
+    dna_input = Input(shape=(window, 4, 1))
+    
+    conv1 = Conv2D(32, kernel_size=(6,4), activation='relu', padding='valid')(dna_input)
+    conv1 = Dropout(0.2)(conv1)
+    conv1 = BatchNormalization()(conv1)
+    conv1 =  MaxPooling2D((2,1),padding='same')(conv1)
+
+    conv2 = Conv2D(32, kernel_size=(6,1), activation='relu', padding='valid')(conv1)
+    conv2 = Dropout(0.2)(conv2)
+    conv2 = BatchNormalization()(conv2)
+    conv2 =  MaxPooling2D((2,1),padding='same')(conv2)
+
+    conv3 = Conv2D(32, kernel_size=(6,1), activation='relu', padding='valid')(conv2)
+    conv3 = Dropout(0.2)(conv3)
+    conv3 = BatchNormalization()(conv3)
+    conv3 =  MaxPooling2D((2,1),padding='same')(conv3)
+
+    dil1 = Conv2D(32, kernel_size=(6,1), activation='relu', padding='same', dilation_rate=(2, 1))(conv3)
+    dil1 = Dropout(0.2)(dil1)
+    dil1 = BatchNormalization()(dil1)
+
+    dil2 = Conv2D(32, kernel_size=(6,1), activation='relu', padding='same', dilation_rate=(4, 1))(dil1)
+    dil2 = Dropout(0.2)(dil2)
+    dil2 = BatchNormalization()(dil2)
+
+    x = Add()([dil1, dil2])
+
+    dil3 = Conv2D(32, kernel_size=(6,1), activation='relu', padding='same', dilation_rate=(8, 1))(x)
+    dil3 = Dropout(0.2)(dil3)
+    dil3 = BatchNormalization()(dil3)
+
+    x = Add()([dil1, dil2, dil3])
+
+    dil4 = Conv2D(32, kernel_size=(6,1), activation='relu', padding='same', dilation_rate=(16, 1))(x)
+    dil4 = Dropout(0.2)(dil4)
+    dil4 = BatchNormalization()(dil4)
+
+    x = Add()([dil1, dil2, dil3, dil4])
+
+    dil5 = Conv2D(32, kernel_size=(6,1), activation='relu', padding='same', dilation_rate=(32, 1))(x)
+    dil5 = Dropout(0.2)(dil5)
+    dil5 = BatchNormalization()(dil5)
+
+    convfinal = Conv2D(64, kernel_size=(1,1), activation='relu', padding='valid')(dil5)
+    convfinal = Dropout(0.2)(convfinal)
+    convfinal = BatchNormalization()(convfinal)
+
+    x = Flatten()(convfinal)
+
+    output = Dense(1, activation='sigmoid')(x)
+    model = Model([dna_input], output)
+
+    return model
+
+def dilatedtest4(window):
+    dna_input = Input(shape=(window, 4, 1))
+    
+    conv1 = Conv2D(32, kernel_size=(6,4), activation='relu', padding='valid')(dna_input)
+    conv1 = Dropout(0.2)(conv1)
+    conv1 = BatchNormalization()(conv1)
+    conv1 =  MaxPooling2D((2,1),padding='same')(conv1)
+
+    conv2 = Conv2D(32, kernel_size=(6,1), activation='relu', padding='valid')(conv1)
+    conv2 = Dropout(0.2)(conv2)
+    conv2 = BatchNormalization()(conv2)
+    conv2 =  MaxPooling2D((2,1),padding='same')(conv2)
+
+    conv3 = Conv2D(32, kernel_size=(6,1), activation='relu', padding='valid')(conv2)
+    conv3 = Dropout(0.2)(conv3)
+    conv3 = BatchNormalization()(conv3)
+    conv3 =  MaxPooling2D((2,1),padding='same')(conv3)
+
+    dil1 = Conv2D(32, kernel_size=(6,1), activation='relu', padding='same', dilation_rate=(2, 1))(conv3)
+    dil1 = Dropout(0.2)(dil1)
+    dil1 = BatchNormalization()(dil1)
+
+    dil2 = Conv2D(32, kernel_size=(6,1), activation='relu', padding='same', dilation_rate=(4, 1))(dil1)
+    dil2 = Dropout(0.2)(dil2)
+    dil2 = BatchNormalization()(dil2)
+
+    x = Add()([dil1, dil2])
+
+    dil3 = Conv2D(32, kernel_size=(6,1), activation='relu', padding='same', dilation_rate=(8, 1))(x)
+    dil3 = Dropout(0.2)(dil3)
+    dil3 = BatchNormalization()(dil3)
+
+    x = Add()([dil1, dil2, dil3])
+
+    dil4 = Conv2D(32, kernel_size=(6,1), activation='relu', padding='same', dilation_rate=(16, 1))(x)
+    dil4 = Dropout(0.2)(dil4)
+    dil4 = BatchNormalization()(dil4)
+
+    x = Add()([dil1, dil2, dil3, dil4])
+
+    dil5 = Conv2D(32, kernel_size=(6,1), activation='relu', padding='same', dilation_rate=(32, 1))(x)
+    dil5 = Dropout(0.2)(dil5)
+    dil5 = BatchNormalization()(dil5)
+
+    x = Add()([dil1, dil2, dil3, dil4, dil5])
+
+    convfinal = Conv2D(64, kernel_size=(1,1), activation='relu', padding='valid')(x)
+    convfinal = Dropout(0.2)(convfinal)
+    convfinal = BatchNormalization()(convfinal)
+
+    x = Flatten()(convfinal)
 
     output = Dense(1, activation='sigmoid')(x)
     model = Model([dna_input], output)

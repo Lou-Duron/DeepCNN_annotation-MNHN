@@ -22,18 +22,18 @@ def parse_arguments():
 
 def get_species_list():
     list = [#'Maca', # 88 artefacts
-            #'HS37', # 6 artefacts
+            'HS37', # 6 artefacts
             #'Call', # 11 artefacts
             #'LeCa', # 1 Artefact
             #'PanP', # 34 artefacts
             #'Asia', # 13 artefacts
             #'ASM2', #  416 artefacts
-            'ASM7', # 32 artefacts
-            'Clin', # 26 artefacts <--- Pred
-            'Kami', # 49 artefacts
-            'Mmul', # 4 artefacts
-            'Panu', # 58 artefacts
-            'Tgel' # 212 artefacts
+            #'ASM7', # 32 artefacts
+            #'Clin', # 26 artefacts <--- Pred
+            #'Kami', # 49 artefacts
+            #'Mmul', # 4 artefacts
+            #'Panu', # 58 artefacts
+            #'Tgel' # 212 artefacts
             ] 
     return list
 
@@ -44,7 +44,7 @@ def main():
 
     for species in species_list:
 
-        path = f'Data/Positions/{species}/gene_full'
+        path = f'Data/Positions/{species}/exon_strand+'
         try:
             os.mkdir(path)
         except:
@@ -75,6 +75,8 @@ def main():
             
             ANNOT = annot[(annot.chr == chr_id )] 
 
+            print(ANNOT.shape)
+
             ANNOT_5 = ANNOT[(ANNOT.strand == '+')]
             ANNOT_3 = ANNOT[(ANNOT.strand == '-')]
             
@@ -92,7 +94,7 @@ def main():
             index_pos5 = get_indexes_vec(ANNOT5_start_index,ANNOT5_stop_index)
             index_pos5 = np.concatenate(index_pos5)
             index_pos5 = np.unique(index_pos5)
-
+            
             index_pos3 = get_indexes_vec(ANNOT3_start_index,ANNOT3_stop_index)
             index_pos3 = np.concatenate(index_pos3)
             index_pos3 = np.unique(index_pos3)
@@ -105,7 +107,7 @@ def main():
             def fill(x):
                 index_full[x-1] = 1
             fill_vec = np.frompyfunc(fill, 1,0)
-            fill_vec(index_pos)
+            fill_vec(index_pos5)
 
             np.save(f'{path}/{chr_id}.npy', index_full)
 

@@ -181,13 +181,14 @@ def prediction_quality(pred_files, species, chr, mode='all'):
 class Chromosome_prediction():
 
     def __init__(self, files_list, species, chr_nb, GC,
-                 window, conv, annotation_type, mode):
+                 window, conv, annotation_type, multi = False):
         plt.style.use('seaborn-white')
         self.files_list = files_list
         self.species = species
         self.chr_nb = chr_nb
         self.window = window
         self.GC = GC
+        self.multi = multi
         f = h5py.File(f'Data/DNA/{species}/hdf5/chr{chr_nb}.hdf5','r')
         DNA = np.array(f['data'])
         f.close()
@@ -195,19 +196,32 @@ class Chromosome_prediction():
         self.DNA = DNA.astype('int8')
         self.DNA_size = len(DNA)
         self.update_conv(conv)
-        self.update_annotation(annotation_type, mode)
+        self.update_annotation(annotation_type)
         
     def update_conv(self, conv):
         self.preds = []
         for prediction_file in self.files_list:
             pred = np.load(f'Predictions/{prediction_file}')
-            pred = pred.reshape(pred.shape[0],)
+            if self.multi:
+                pred = np.reshape(np.ravel(pred,  order='F'), (2,pred.shape[0]))
+                pred5 = pred[0]
+                pred3 = pred[1]
+            else:
+                pred = pred.reshape(pred.shape[0],)
             if conv != 0:
-                pred = np.convolve(pred, np.ones(conv), 'valid') / conv
+                if self.multi:
+                    pred5 = np.convolve(pred5, np.ones(conv), 'valid') / conv
+                    pred3 = np.convolve(pred3, np.ones(conv), 'valid') / conv
+                else:
+                    pred = np.convolve(pred, np.ones(conv), 'valid') / conv
                 self.GC_cont = np.convolve((self.DNA>=3).astype('int8') , np.ones(conv), 'valid') / conv
-            self.preds.append(pred)
+            if self.multi:
+                self.preds.append(pred5)
+                self.preds.append(pred3)
+            else:
+                self.preds.append(pred)
 
-    def update_annotation(self, annotation_type, mode):
+    def update_annotation(self, annotation_type):
         annot = pd.read_csv(f'Data/Annotations/{self.species}/{annotation_type}.csv', sep = ',')
         annot = annot.drop_duplicates(subset=['chr','stop', 'start', 'strand'], keep='last') #########################
         annot = annot[(annot.chr == f'chr{self.chr_nb}' )] 
@@ -229,27 +243,22 @@ class Chromosome_prediction():
             pos_3[x] = 1
         fill_3_vec = np.frompyfunc(fill_3, 1,0)
 
-        if mode == 'full':
-            def get_indexes(x,y):
-                    return np.arange(x,y+1)
-            get_indexes_vec = np.frompyfunc(get_indexes,2,1)
+        
+        def get_indexes(x,y):
+                return np.arange(x,y+1)
+        get_indexes_vec = np.frompyfunc(get_indexes,2,1)
 
-            index_5_pos = get_indexes_vec(annot_5_start_index,annot_5_stop_index)
-            index_5_pos = np.concatenate(index_5_pos)
-            index_5_pos = np.unique(index_5_pos)
+        index_5_pos = get_indexes_vec(annot_5_start_index,annot_5_stop_index)
+        index_5_pos = np.concatenate(index_5_pos)
+        index_5_pos = np.unique(index_5_pos)
 
-            index_3_pos = get_indexes_vec(annot_3_start_index,annot_3_stop_index)
-            index_3_pos = np.concatenate(index_3_pos)
-            index_3_pos = np.unique(index_3_pos)
+        index_3_pos = get_indexes_vec(annot_3_start_index,annot_3_stop_index)
+        index_3_pos = np.concatenate(index_3_pos)
+        index_3_pos = np.unique(index_3_pos)
 
-            fill_5_vec(index_5_pos)
-            fill_3_vec(index_3_pos)
-        elif mode == 'start':
-            fill_5_vec(annot_5_start_index)
-            fill_3_vec(annot_3_stop_index)
-        elif mode == 'stop':
-            fill_5_vec(annot_5_stop_index)
-            fill_3_vec(annot_3_start_index)
+        fill_5_vec(index_5_pos)
+        fill_3_vec(index_3_pos)
+      
 
         self.pos_5 = pos_5
         self.pos_3 = pos_3*0.9
@@ -267,7 +276,6 @@ class Chromosome_prediction():
         for i, pred in enumerate(self.preds):
             name = self.files_list[i]
             name = name.replace('.npy','')
-            plt.plot(self.nuc[x:x+y], pred[x:x+y], label=name)
+            plt.plot(self.nuc[x:x+y], pred[x:x+y])#, label=name)
         plt.legend()
         plt.show()
-
