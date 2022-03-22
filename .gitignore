@@ -2,10 +2,6 @@
 !/Data/**/
 !/Data/**/.gitkeep
 
-/Input/**
-!/Input/**/
-!/Input/**/.gitkeep
-
 /Predictions/**
 !/Predictions/**/
 !/Predictions/**/.gitkeep
@@ -23,3 +19,4 @@
 /Other/**
 
 playground.ipynb
+Pipeline.sh
