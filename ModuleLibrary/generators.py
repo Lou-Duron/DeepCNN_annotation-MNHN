@@ -122,7 +122,7 @@ class Generator_Prediction(tf.keras.utils.Sequence):
     def on_epoch_end(self):
         self.indexes = np.arange(len(self.data))
 
-class PredGeneratorCombine(tf.keras.utils.Sequence):
+class Generator_Prediction_Coverage(tf.keras.utils.Sequence):
    
     def __init__(self, data, batch_size, window):
         self.dim = (window,4)
@@ -131,10 +131,17 @@ class PredGeneratorCombine(tf.keras.utils.Sequence):
         self.on_epoch_end()
         
     def __len__(self):
-        return int(np.floor(len(self.data) / self.batch_size))
+        return int(np.floor(len(self.data[0]) / self.batch_size)) + 1
+
+    def get_last_batch_size(self):
+        last_batch_size = len(self.data[0]) - (self.batch_size * (self.__len__() - 1))
+        return last_batch_size
 
     def __getitem__(self, index):
-        batch_indexes = self.indexes[index*self.batch_size:(index+1)*self.batch_size]
+        if index == self.__len__() - 1:
+            batch_indexes = self.indexes[index*self.batch_size:(index*self.batch_size)+self.get_last_batch_size()]
+        else:
+            batch_indexes = self.indexes[index*self.batch_size:(index+1)*self.batch_size]
         DNA, PRED = self.__data_generation(batch_indexes)
         return [DNA, PRED]
 
@@ -147,4 +154,4 @@ class PredGeneratorCombine(tf.keras.utils.Sequence):
         return DNA, PRED
 
     def on_epoch_end(self):
-        self.indexes = np.arange(len(self.data))
+        self.indexes = np.arange(len(self.data[0]))

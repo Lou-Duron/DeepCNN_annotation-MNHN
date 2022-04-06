@@ -30,6 +30,21 @@ def get_complementary_strand_OH(arr):
 
     return np.apply_along_axis(complement, axis=1, arr=arr)
 
+def OH_to_DNA(arr):
+    res = np.array([])
+    for nuc in arr:
+        if np.array_equal(nuc, [0,0,0,1]):
+            res = np.append(res, 'c')
+        elif np.array_equal(nuc, [0,0,1,0]):
+            res = np.append(res, 'g')
+        elif np.array_equal(nuc, [0,1,0,0]):
+            res = np.append(res, 't')
+        elif np.array_equal(nuc, [1,0,0,0]):
+            res = np.append(res, 'a')
+        else:
+            res = np.append(res, '-')
+    return res
+
 def get_complementary_strand_seq(arr):
     '''
     Takes a DNA sequence in one hot format and return the reverse
@@ -65,7 +80,7 @@ def one_hot_encoding_seq(X):
     X_one_hot = bool.astype('int8')
     return X_one_hot
 
-def load_data_one_chr(species, chr, window, reverse=False, padding=True):
+def load_data_one_chr(species, chr, window, reverse=False):
     '''
     Takes a species ID, a chromosome ID and a window size and load the 
     corresponding data to give to a prediction generator. The data will 
@@ -73,15 +88,51 @@ def load_data_one_chr(species, chr, window, reverse=False, padding=True):
     better performances.
     '''
     f = np.load(f'Data/DNA/{species}/one_hot/chr{chr}.npy')
-    if padding:
-        f = np.append(np.zeros((window//2,4),dtype='int8'), f, axis=0)
-        f = np.append(f, np.zeros((window//2,4),dtype='int8'), axis=0)
+    f = np.append(np.zeros((window//2,4),dtype='int8'), f, axis=0)
+    f = np.append(f, np.zeros((window//2,4),dtype='int8'), axis=0)
     if reverse:
         f = get_complementary_strand_OH(f)
     sliding_window = sliding_window_view(f, (window,4), axis=(0,1))
     data = sliding_window.reshape(sliding_window.shape[0],
                                   sliding_window.shape[2], 
                                   sliding_window.shape[3],1)
+    return data
+
+def load_data_one_chr_coverage(species, chr, window):
+    '''
+    Takes a species ID, a chromosome ID and a window size and load the 
+    corresponding data to give to a prediction generator. The data will 
+    be one hot encoded and loaded in a vectorized sliding window for 
+    better performances.
+    '''
+    data = []
+
+    f = np.load(f'Data/DNA/{species}/one_hot/chr{chr}.npy').astype('int8')
+    f = np.append(np.zeros((window//2,4),dtype='int8'), f, axis=0)
+    f = np.append(f, np.zeros((window//2,4),dtype='int8'), axis=0)
+
+    sliding_window = sliding_window_view(f, (window,4), axis=(0,1))
+    dna = sliding_window.reshape(sliding_window.shape[0],
+                                  sliding_window.shape[2], 
+                                  sliding_window.shape[3],1)
+    data.append(dna)
+
+    gene_start = np.load(f'Predictions/{species}_gene_start/chr{chr}.npy')
+    gene_stop = np.load(f'Predictions/{species}_gene_stop/chr{chr}.npy')
+    exon_start = np.load(f'Predictions/{species}_exon_start/chr{chr}.npy')
+    exon_stop = np.load(f'Predictions/{species}_exon_stop/chr{chr}.npy')
+
+    pred = np.array([gene_start, gene_stop, exon_start, exon_stop])
+    pred = np.reshape(pred.flatten(order='F'), (pred.shape[1],pred.shape[0]))
+    pred = np.append(np.zeros((window//2,4),dtype='float32'), pred, axis=0)
+    pred = np.append(pred, np.zeros((window//2,4),dtype='float32'), axis=0)
+
+    pred = sliding_window_view(pred, (window,4), axis=(0,1))
+    pred = pred.reshape(pred.shape[0],
+                      pred.shape[2], 
+                      pred.shape[3],1)  
+    data.append(pred)
+
     return data
 
 def load_data_features(species_list, window, ratio, validation, features, mode):
@@ -163,7 +214,7 @@ def load_data_features(species_list, window, ratio, validation, features, mode):
 def load_data_gene_coverage(species_list, window, step, validation):
 
     dna = np.zeros((window//2,4),dtype='int8')
-    pred = np.zeros((window//2,4),dtype='int8')
+    pred = np.zeros((window//2,4),dtype='float32')
     indexes = np.array([], dtype=int)
     labels = np.array([], dtype='int8')
     total_len = 0
@@ -182,7 +233,7 @@ def load_data_gene_coverage(species_list, window, step, validation):
             dna = np.append(dna, chr, axis=0)
             dna = np.append(dna, np.zeros((window//2,4),dtype='int8'), axis=0)
 
-            lab = np.load(f'Data/Positions/{species}/strand+/{f}')
+            lab = np.load(f'Data/Positions/{species}/gene_strand+/{f}')
             labels = np.append(labels, lab)
             labels = np.append(labels, np.zeros(window//2, dtype='int8'))
 
@@ -197,12 +248,16 @@ def load_data_gene_coverage(species_list, window, step, validation):
             chr_pred = np.array([gene_start, gene_stop, exon_start, exon_stop])
             chr_pred = np.reshape(chr_pred.flatten(order='F'), (chr_pred.shape[1],chr_pred.shape[0]))
             pred = np.append(pred, chr_pred, axis=0)
-            pred = np.append(pred, np.zeros((window//2,4),dtype='int8'), axis=0)
+            pred = np.append(pred, np.zeros((window//2,4),dtype='float32'), axis=0)
+            if i ==0:
+                break
 
     dna = sliding_window_view(dna, (window,4), axis=(0,1))
+    print(dna.shape)
     dna = dna.reshape(dna.shape[0],
                       dna.shape[2], 
                       dna.shape[3],1)
+    print(dna.shape)
 
     pred = sliding_window_view(pred, (window,4), axis=(0,1))
     pred = pred.reshape(pred.shape[0],
@@ -219,6 +274,73 @@ def load_data_gene_coverage(species_list, window, step, validation):
     val_indexes = indexes[:int(len(indexes)*validation)]
 
     return dna, pred, labels, ratio, train_indexes, val_indexes
+
+def load_data_reTrain(species_list, window, validation, features, mode, treshold):
+    data = np.zeros((window//2,4),dtype='int8')
+    indexes = np.array([], dtype=int)
+    labels = np.array([], dtype='int8')
+    total_len = 0
+
+    for species in species_list:
+        files = os.listdir(f'Data/DNA/{species}/one_hot')
+        annot = pd.read_csv(f'Data/Annotations/{species}/{features}.csv', sep = ',')
+        annot = annot.drop_duplicates(subset=['chr', 'stop', 'start', 'strand'], keep='last') 
+        if len(species_list) == 1:
+            files.sort()
+            files.remove(files[0])
+        print('')
+
+        for i, f in enumerate(files):
+            print(f'{species} : {i+1}/{len(files)}', end = '\r')
+            
+            chr = np.load(f'Data/DNA/{species}/one_hot/{f}')
+            data = np.append(data, chr, axis=0)
+            data = np.append(data, np.zeros((window//2,4),dtype='int8'), axis=0)
+
+            ANNOT = annot[(annot.chr == f.replace('.npy','') )]
+            ANNOT = ANNOT[(ANNOT.strand == '+')]
+        
+            if mode == 'start':
+                feature_pos = np.unique(ANNOT['start'].values) 
+            elif mode == 'stop':
+                feature_pos = np.unique(ANNOT['stop'].values) 
+            feature_pos = feature_pos - 1
+
+            lab = np.zeros(len(chr), dtype='int8')
+
+            def fill(x):
+                lab[x] = 1
+            fill_vec = np.frompyfunc(fill, 1,0)
+            fill_vec(feature_pos)
+
+            labels = np.append(labels, lab)
+            labels = np.append(labels, np.zeros(window//2, dtype='int8'))
+
+            pred = np.load(f'Predictions/{species}_{features.casefold()}_{mode}/{f}')
+
+            indexes_chr = np.where(pred > treshold)[0]
+            indexes_chr = np.unique(np.append(feature_pos, indexes_chr))
+            indexes_chr = indexes_chr + total_len
+            indexes = np.append(indexes, indexes_chr)
+
+            total_len += len(chr) + (window // 2)
+            
+
+    data = sliding_window_view(data, (window,4), axis=(0,1))
+    data = data.reshape(data.shape[0],
+                        data.shape[2], 
+                        data.shape[3],1)
+ 
+    labels = labels[:-(window//2)]
+    tmp = labels[indexes]
+    ratio = len(tmp[tmp==0])/len(tmp[tmp==1])
+
+    np.random.shuffle(indexes)
+
+    train_indexes = indexes[int(len(indexes)*validation):]
+    val_indexes = indexes[:int(len(indexes)*validation)]
+
+    return data, labels, ratio, train_indexes, val_indexes
 
 def sliding_window_view(x, window_shape, axis=None, *,
                         subok=False, writeable=False):

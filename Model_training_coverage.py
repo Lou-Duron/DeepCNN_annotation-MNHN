@@ -26,14 +26,12 @@ def parse_arguments():
                         help="Number of epochs")
     parser.add_argument('-w', '--window', default=2000, type=int,
                         help="Window size")
-    parser.add_argument('-s', '--step', default=50, type=int,
+    parser.add_argument('-s', '--step', default=100, type=int,
                         help="Step between windows")
     parser.add_argument('-b', '--batch_size', default=1024, type=int,
                         help="Batch size")
     parser.add_argument('-v', '--validation', default=0.15, type=float,
-                        help="Validation ratio")                    
-    parser.add_argument('-p', '--prefix',  
-                        help="data prefix")          
+                        help="Validation ratio")        
     return parser.parse_args()
 
 def main():
@@ -113,7 +111,7 @@ def main():
                         batch_size =  args.batch_size,
                         validation_data=val_generator,
                         callbacks = callbacks,
-                        verbose = 1, 
+                        verbose = 2, 
                         class_weight = class_weights(ratio))
 
     # Results saving

@@ -11,8 +11,8 @@ import argparse
 import os
 from tensorflow import keras
 from ModuleLibrary.metrics import MCC, BA
-from ModuleLibrary.utils import load_data_one_chr
-from ModuleLibrary.generators import Generator_Prediction
+from ModuleLibrary.utils import load_data_one_chr_coverage
+from ModuleLibrary.generators import Generator_Prediction_Coverage
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
@@ -54,20 +54,19 @@ def main():
 
     if args.chromosome is not None:
 
-        data = load_data_one_chr(args.species, args.chromosome, window_size,
-                                 args.reverse)
-
+        data = load_data_one_chr_coverage(args.species, args.chromosome, window_size)
         #######
-        data = data[:1000000]
-        ####### 
+        dna = data[0][:10000000]
+        pred = data[1][:10000000]
+        data = [dna,pred]
+        #######                         
 
-        pred_generator = Generator_Prediction(data = data, 
-                                              batch_size = 2048,
-                                              window = window_size)
+        pred_generator = Generator_Prediction_Coverage(data = data, 
+                                                        batch_size = 2048,
+                                                        window = window_size)
 
         prediction = model.predict(pred_generator, verbose=1)
 
-        assert len(prediction) == len(data), 'Data and prediciton length are not the same'
 
         if args.reverse:
             prediction = prediction[::-1]
@@ -86,10 +85,10 @@ def main():
         for file in files:
             chr_id = file.replace('.npy','')
             chr_id = chr_id.replace('chr','')
-            data = load_data_one_chr(args.species, chr_id, window_size,
+            data = load_data_one_chr_coverage(args.species, chr_id, window_size,
                                      args.reverse, padding=True)
 
-            pred_generator = Generator_Prediction(data = data, 
+            pred_generator = Generator_Prediction_Coverage(data = data, 
                                                   batch_size = 2048,
                                                   window = window_size)
 

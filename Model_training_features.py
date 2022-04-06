@@ -67,6 +67,15 @@ def main():
     window = args.window
     if window % 2 == 0:
         window += 1
+
+    # Model 
+    model = Model_dic(window)[args.model]   
+
+    model.compile(loss='binary_crossentropy',
+                  optimizer='adam',   
+                  metrics=['accuracy', MCC, BA])
+
+    model.summary() 
     
     print('Loading data')
     data, labels,  train_indexes, val_indexes = load_data_features(species_list, 
@@ -91,12 +100,8 @@ def main():
                                        shuffle = True)
 
 
-    # Model 
-    model = Model_dic(window)[args.model]   
+    
 
-    model.compile(loss='binary_crossentropy',
-                  optimizer='adam',   
-                  metrics=['accuracy', MCC, BA])
 
 
     path = f'Results/{args.results}'
@@ -108,8 +113,7 @@ def main():
     # Hyperparameters and callbacks
     callbacks = [check_pointer(path),early_stopping()]
 
-    model.summary() 
-
+    
     # Model training    
     history = model.fit(train_generator,
                         epochs = args.epochs,
