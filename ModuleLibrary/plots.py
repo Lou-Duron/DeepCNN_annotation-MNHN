@@ -506,15 +506,15 @@ class Features_exploration():
             contrib = np.sum(seq_contrib[el:el+5])
             if contrib > 0.5:
                 print(f'Motif found : {motif_search[el]} at {el}. Contrib : {round(contrib,3)}')
-            
         
-        #seq_contrib = seq_contrib.reshape((1,301))
         seq_contrib = np.transpose(seq_contrib)
+
+
         cim = plt.imread("colorbar.png")
         cim = cim[cim.shape[0]//2, 50:390, :]
 
         cmap = mcolors.ListedColormap(cim)
-        plt.figure(figsize=(34,1), dpi= 80)
+        plt.figure(figsize=(34,1), dpi= 200)
         plt.imshow(seq_contrib, cmap=cmap, aspect='auto', vmin=-1, vmax=1)
         plt.xticks(np.arange(0, 301,10))
         plt.yticks([0,1,2,3], ['a','t','g','c'])

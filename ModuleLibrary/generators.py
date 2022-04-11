@@ -50,6 +50,57 @@ class Generator_Features(tf.keras.utils.Sequence):
 
 class Generator_Coverage(tf.keras.utils.Sequence):
 
+    def __init__(self, indexes, data, labels, batch_size, mode,
+                 window, shuffle=True, data_augment=False):
+        self.dna_dim = (window, 4, 1)
+        self.pred_dim = (window, mode*2, 1)
+        self.mode = mode
+        self.list_IDs = indexes
+        self.batch_size = batch_size
+        self.labels = labels
+        self.data = data
+        self.shuffle = shuffle
+        self.data_augment = data_augment
+        self.on_epoch_end()
+        
+    def __len__(self):
+        return int(np.floor(len(self.list_IDs) / self.batch_size))
+
+    def __getitem__(self, index):
+        indexes = self.indexes[index*self.batch_size:(index+1)*self.batch_size]
+        list_IDs_temp = [self.list_IDs[k] for k in indexes]
+        DNA, PRED, Y = self.__data_generation(list_IDs_temp)
+        if self.mode > 0:
+            output = [DNA, PRED]
+        else:
+            output = DNA 
+        return output, Y
+
+    def __data_generation(self, indexes):
+        DNA = np.empty((self.batch_size, *self.dna_dim), dtype='int8')
+        PRED = np.empty((self.batch_size, *self.pred_dim), dtype=float)
+        Y = np.empty((self.batch_size), dtype='int8')
+
+        for i, ID in enumerate(indexes):
+            DNA[i,] = self.data[0][ID]
+            Y[i] = self.labels[ID]
+            if self.mode > 0:
+                PRED[i,] = self.data[1][ID]
+
+        return DNA, PRED, Y
+
+    def data_shift(self): # Data augment
+        self.list_IDs = self.list_IDs + 2
+
+    def on_epoch_end(self):
+        self.indexes = np.arange(len(self.list_IDs))
+        if self.data_augment:
+            self.data_shift()
+        if self.shuffle == True:
+            np.random.shuffle(self.indexes)
+
+class Generator_Coverage_from_dna(tf.keras.utils.Sequence):
+
     def __init__(self, indexes, data, labels, batch_size,
                  window, shuffle=True, data_augment=False):
         self.dim = (window,4)
@@ -67,18 +118,16 @@ class Generator_Coverage(tf.keras.utils.Sequence):
     def __getitem__(self, index):
         indexes = self.indexes[index*self.batch_size:(index+1)*self.batch_size]
         list_IDs_temp = [self.list_IDs[k] for k in indexes]
-        DNA, PRED, Y = self.__data_generation(list_IDs_temp)
-        return [DNA, PRED], Y
+        DNA, Y = self.__data_generation(list_IDs_temp)
+        return DNA, Y
 
     def __data_generation(self, indexes):
-        DNA = np.empty((self.batch_size, *self.dim, 1), dtype='int8')
-        PRED = np.empty((self.batch_size, *self.dim, 1), dtype=float)
+        DNA = np.empty((self.batch_size, *self.dim), dtype='int8')
         Y = np.empty((self.batch_size), dtype='int8')
         for i, ID in enumerate(indexes):
-            DNA[i,] = self.data[0][ID]
-            PRED[i,] = self.data[1][ID]
+            DNA[i,] = self.data[ID]
             Y[i] = self.labels[ID]
-        return DNA, PRED, Y
+        return DNA, Y
 
     def data_shift(self): # Data augment
         self.list_IDs = self.list_IDs + 2

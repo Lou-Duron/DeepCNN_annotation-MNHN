@@ -5,7 +5,7 @@ Created on Wed Jan 19 15:52 2022
 @author: lou
 
 Example of use :
-python Model_training_coverage.py -r HS37_coverage -m test -e 30 -s 100 
+python Model_training_coverage.py -r HS37_coverage -m myModel1
 """
 import numpy as np
 import argparse
@@ -22,6 +22,12 @@ def parse_arguments():
                         help="Results suffix")
     parser.add_argument('-m', '--model',
                         help="Model architecture to use")
+    parser.add_argument('-f', '--feature',
+                        help="Feature to use")
+    parser.add_argument('-o', '--mode', default = 0, type=int,
+                        help="0 : dna only, 1 : gene, 2 : gene+exon, 3: gene+exon+rna")
+    parser.add_argument('-c', '--chr', default=1, type=int,
+                        help="Number of chromosome to train on, 0 for all")
     parser.add_argument('-e', '--epochs', default=30, type=int,
                         help="Number of epochs")
     parser.add_argument('-w', '--window', default=2000, type=int,
@@ -30,8 +36,8 @@ def parse_arguments():
                         help="Step between windows")
     parser.add_argument('-b', '--batch_size', default=1024, type=int,
                         help="Batch size")
-    parser.add_argument('-v', '--validation', default=0.15, type=float,
-                        help="Validation ratio")        
+    parser.add_argument('-v', '--verbose', default=1, type=int,
+                        help="Verbose mode")        
     return parser.parse_args()
 
 def main():
@@ -69,12 +75,16 @@ def main():
     dna, pred, labels, ratio, train_indexes, val_indexes  = load_data_gene_coverage(species_list, 
                                                                                     window, 
                                                                                     args.step, 
-                                                                                    args.validation )
+                                                                                    0.15,
+                                                                                    args.mode,
+                                                                                    args.chr,
+                                                                                    args.feature)
 
     train_generator = Generator_Coverage(indexes = train_indexes, 
                                          labels = labels,
                                          data = [dna, pred], 
                                          batch_size = args.batch_size,
+                                         mode = args.mode,
                                          window = window,
                                          shuffle = True,
                                          data_augment=True)
@@ -83,8 +93,10 @@ def main():
                                        labels = labels,
                                        data = [dna, pred], 
                                        batch_size = args.batch_size,
+                                       mode = args.mode,
                                        window = window,
-                                       shuffle = True)
+                                       shuffle = True,
+                                       data_augment=False)
 
 
     model = Model_dic(window)[args.model]   
@@ -111,7 +123,7 @@ def main():
                         batch_size =  args.batch_size,
                         validation_data=val_generator,
                         callbacks = callbacks,
-                        verbose = 2, 
+                        verbose = args.verbose, 
                         class_weight = class_weights(ratio))
 
     # Results saving
