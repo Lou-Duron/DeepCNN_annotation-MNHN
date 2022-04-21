@@ -318,6 +318,101 @@ class Chromosome_prediction():
         plt.legend()
         plt.show()
 
+
+class Chromosome_prediction_prot():
+
+    def __init__(self, files_list, species, chr_nb, annotation_type):
+
+        plt.style.use('seaborn-white')
+        self.species = species
+        self.chr_nb = chr_nb
+        self.annot = annotation_type
+        self.file = files_list[0]
+        f = h5py.File(f'Data/DNA/{species}/hdf5/chr{chr_nb}.hdf5','r')
+        DNA = np.array(f['data'])
+        f.close()
+        DNA = DNA.reshape(DNA.shape[0],)
+        self.DNA = DNA.astype('int8')
+        self.DNA_size = len(DNA)
+        pred = np.load(f'Predictions/{self.file}')
+        self.pred = pred.reshape(pred.shape[0],)
+        self.update_annotation(annotation_type)
+        self.update_conv(10)
+        
+    def update_conv(self, conv):
+        self.frames = []
+        for i in range(3):
+            self.frames.append(np.copy(self.pred))
+        for i in range(len(self.pred)):
+            if i % 3 != 0:
+                self.frames[0][i] = 0
+        for i in range(len(self.pred)):
+            if i % 3 != 1:
+                self.frames[1][i] = 0
+        for i in range(len(self.pred)):
+            if i % 3 != 2:
+                self.frames[2][i] = 0
+        for i in range(3):
+            self.frames[i] = (np.convolve(self.frames[i], np.ones(conv), 'valid') / conv)*3
+
+    def update_annotation(self, annotation_type):
+        self.annot = annotation_type
+        annot = pd.read_csv(f'Data/Annotations/{self.species}/{annotation_type}.csv', sep = ',')
+        annot = annot.drop_duplicates(subset=['chr','stop', 'start', 'strand'], keep='last') 
+        annot = annot[(annot.chr == f'chr{self.chr_nb}' )] 
+        annot_5 = annot[(annot.strand == '+')]
+        annot_3 = annot[(annot.strand == '-')]
+        annot_5_start_index = annot_5['start'].values - 1
+        annot_5_stop_index = annot_5['stop'].values - 1
+        annot_3_start_index = annot_3['start'].values - 1
+        annot_3_stop_index = annot_3['stop'].values - 1
+        pos_5 = np.zeros(self.DNA_size, dtype='int8')
+        pos_3 = np.zeros(self.DNA_size, dtype='int8')
+
+        def fill_5(x):
+            pos_5[x] = 1
+        fill_5_vec = np.frompyfunc(fill_5, 1,0)
+
+        def fill_3(x):
+            pos_3[x] = 1
+        fill_3_vec = np.frompyfunc(fill_3, 1,0)
+
+        
+        def get_indexes(x,y):
+                return np.arange(x,y+1)
+        get_indexes_vec = np.frompyfunc(get_indexes,2,1)
+
+    
+        index_5_pos = get_indexes_vec(annot_5_start_index,annot_5_stop_index)
+        index_5_pos = np.concatenate(index_5_pos)
+        index_5_pos = np.unique(index_5_pos)
+
+        index_3_pos = get_indexes_vec(annot_3_start_index,annot_3_stop_index)
+        index_3_pos = np.concatenate(index_3_pos)
+        index_3_pos = np.unique(index_3_pos)
+
+        fill_5_vec(index_5_pos)
+        fill_3_vec(index_3_pos)
+    
+
+        self.pos_5 = pos_5
+        self.pos_3 = pos_3*0.98
+        self.nuc = np.arange(self.DNA_size)
+       
+
+    def update_plots(self, plot_start, plot_range):
+        x = plot_start
+        y = plot_range
+        plt.figure(figsize=(30,4))
+        plt.ylim([0,1.1])
+        
+        plt.plot(self.nuc[x:x+y], self.pos_5[x:x+y], label=self.annot)
+        plt.plot(self.nuc[x:x+y], self.frames[0][x:x+y], label='Frame 1')
+        plt.plot(self.nuc[x:x+y], self.frames[1][x:x+y], label='Frame 2')
+        plt.plot(self.nuc[x:x+y], self.frames[2][x:x+y], label='Frame 3')
+        plt.legend()
+        plt.show()
+
 class Features_exploration():
 
     def __init__(self, model_path, pred_path, species, chromosome, treshold, motif):
@@ -505,12 +600,12 @@ class Features_exploration():
         for el in motif_search.keys():
             contrib = np.sum(seq_contrib[el:el+5])
             if contrib > 0.5:
-                print(f'Motif found : {motif_search[el]} at {el}. Contrib : {round(contrib,3)}')
+                mot = ''.join(motif_search[el])
+                print(f'Motif found : {mot.upper()} at {el}. Contrib : {round(contrib,3)}')
         
         seq_contrib = np.transpose(seq_contrib)
 
-
-        cim = plt.imread("colorbar.png")
+        cim = plt.imread("ModuleLibrary/colorbar.png")
         cim = cim[cim.shape[0]//2, 50:390, :]
 
         cmap = mcolors.ListedColormap(cim)
@@ -518,7 +613,6 @@ class Features_exploration():
         plt.imshow(seq_contrib, cmap=cmap, aspect='auto', vmin=-1, vmax=1)
         plt.xticks(np.arange(0, 301,10))
         plt.yticks([0,1,2,3], ['a','t','g','c'])
-        #plt.ylim(0, 0.2)
         plt.colorbar()
         plt.show()
 

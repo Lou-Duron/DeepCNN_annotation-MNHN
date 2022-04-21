@@ -17,17 +17,17 @@ import re
 
 
 def main():
-    files = ['Cani','Dani','Equi','Feli','Gall','MusM','Orni']
+    files = ['HS38']
     for species in files:
         chr_list = []
-        for element in os.listdir(f'Data/DNA/{species}/fasta'):
+        for element in os.listdir(f'Data/DNA/HS37/fasta'):
             if re.match(r'chr\w+.?\.fa', element):
                 num = re.search('chr\w+.?\.', element)
                 chr_list.append(num.group(0)) 
 
         ID_list = []
         for chr in chr_list:
-            with open(f'Data/DNA/{species}/fasta/{chr}fa') as f:
+            with open(f'Data/DNA/HS37/fasta/{chr}fa') as f:
                 for line in f:
                     ID = line.split(' ')[0]
                     ID = ID.replace('>','')
@@ -41,7 +41,7 @@ def main():
             file = open(f"Data/Annotations/{species}/annot/{chr}gff", 'w')
             file.write("seqid\tsource\ttype\tstart\tstop\tscore\tstrand\tphase\tattibutes\n")
             files.append(file)
-        with open(f'Data/Raw_data/animals/{species}.gff', 'r') as f:
+        with open(f'Data/Raw_data/GRCh38_latest_genomic.gff', 'r') as f:
             for line in f:
                 for j, id in enumerate(ID_list):
                     if line.startswith(id):

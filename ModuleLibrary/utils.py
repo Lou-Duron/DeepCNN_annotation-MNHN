@@ -5,6 +5,7 @@ Created on Wen Jan 26 10:47 2022
 @author: lou
 """
 
+import h5py
 import numpy as np
 import os
 import pandas as pd
@@ -80,6 +81,11 @@ def one_hot_encoding_seq(X):
     X_one_hot = bool.astype('int8')
     return X_one_hot
 
+def one_hot_prot(seq):
+    bool = (np.arange(0,21) == seq[...,None])
+    seq_one_hot = bool.astype('int8')
+    return seq_one_hot
+
 def load_data_one_chr(species, chr, window, reverse=False):
     '''
     Takes a species ID, a chromosome ID and a window size and load the 
@@ -98,7 +104,17 @@ def load_data_one_chr(species, chr, window, reverse=False):
                                   sliding_window.shape[3],1)
     return data
 
-def load_data_one_chr_coverage(species, chr, window):
+def load_data_one_chr_prot(species, chr, window, reverse=False):
+
+    h5 = h5py.File(f'Data/DNA/{species}/hdf5/chr{chr}.hdf5','r')
+    dna = np.array(h5['data']).astype('int8')
+    dna = dna.reshape(dna.shape[0])
+    dna = np.append(np.zeros(((window*3)//2),dtype='int8'), dna, axis=0)
+    dna = np.append(dna, np.zeros(((window*3)//2),dtype='int8'), axis=0)
+    data = sliding_window_view(dna, window*3)
+    return data
+
+def load_data_one_chr_coverage(species, chr, window, mode=1):
     '''
     Takes a species ID, a chromosome ID and a window size and load the 
     corresponding data to give to a prediction generator. The data will 
@@ -117,17 +133,22 @@ def load_data_one_chr_coverage(species, chr, window):
                                   sliding_window.shape[3],1)
     data.append(dna)
 
-    gene_start = np.load(f'Predictions/{species}_gene_start/chr{chr}.npy')
-    gene_stop = np.load(f'Predictions/{species}_gene_stop/chr{chr}.npy')
-    exon_start = np.load(f'Predictions/{species}_exon_start/chr{chr}.npy')
-    exon_stop = np.load(f'Predictions/{species}_exon_stop/chr{chr}.npy')
+    pred_list = []
+    pred_list.append(np.load(f'Predictions/{species}_gene_start/chr{chr}.npy'))
+    pred_list.append(np.load(f'Predictions/{species}_gene_stop/chr{chr}.npy'))
+    if mode > 1:
+        pred_list.append(np.load(f'Predictions/{species}_exon_start/chr{chr}.npy'))
+        pred_list.append(np.load(f'Predictions/{species}_exon_stop/chr{chr}.npy'))
+    if mode > 2:
+        pred_list.append(np.load(f'Predictions/{species}_rna_start/chr{chr}.npy'))
+        pred_list.append(np.load(f'Predictions/{species}_rna_stop/chr{chr}.npy'))
 
-    pred = np.array([gene_start, gene_stop, exon_start, exon_stop])
+    pred = np.array(pred_list)
     pred = np.reshape(pred.flatten(order='F'), (pred.shape[1],pred.shape[0]))
-    pred = np.append(np.zeros((window//2,4),dtype='float32'), pred, axis=0)
-    pred = np.append(pred, np.zeros((window//2,4),dtype='float32'), axis=0)
+    pred = np.append(np.zeros((window//2,mode*2),dtype='float32'), pred, axis=0)
+    pred = np.append(pred, np.zeros((window//2,mode*2),dtype='float32'), axis=0)
 
-    pred = sliding_window_view(pred, (window,4), axis=(0,1))
+    pred = sliding_window_view(pred, (window,mode*2), axis=(0,1))
     pred = pred.reshape(pred.shape[0],
                       pred.shape[2], 
                       pred.shape[3],1)  
@@ -297,8 +318,7 @@ def load_data_gene_coverage(species_list, window, step, validation, mode, chr_nb
 
     return dna, pred, labels, ratio, train_indexes, val_indexes
 
-def sliding_window_view(x, window_shape, axis=None, *,
-                        subok=False, writeable=False):
+def sliding_window_view(x, window_shape, axis=None, *, subok=False, writeable=False):
     '''
     Takes an numpy array and a window size and return a vectorized
     sliding window. 
@@ -339,4 +359,132 @@ def sliding_window_view(x, window_shape, axis=None, *,
     out_shape = tuple(x_shape_trimmed) + window_shape
     return np.lib.stride_tricks.as_strided(x, strides=out_strides, shape=out_shape,
                       subok=subok, writeable=writeable)
+
+def traduction(seq):
+
+    seq = seq[:len(seq) - len(seq) % 3]
+
+    dic = { 1:{1:{1:1, 2:2, 3:1, 4:2},
+              2:{1:3, 2:3, 3:20, 4:3},
+              3:{1:4, 2:5, 3:4, 4:5},
+              4:{1:6, 2:6, 3:6, 4:6}},
+            2:{1:{1:0, 2:7, 3:0, 4:7},
+              2:{1:8, 2:9, 3:8, 4:9},
+              3:{1:0, 2:10, 3:11, 4:10},
+              4:{1:5, 2:5, 3:5, 4:5}},
+            3:{1:{1:12, 2:13, 3:12, 4:13},
+              2:{1:14, 2:14, 3:14, 4:14},
+              3:{1:15, 2:15, 3:15, 4:15},
+              4:{1:16, 2:16, 3:16, 4:16}},
+            4:{1:{1:17, 2:18, 3:17, 4:18},
+              2:{1:8, 2:8, 3:8, 4:8},
+              3:{1:4, 2:4, 3:4, 4:4},
+              4:{1:19, 2:19, 3:19, 4:19}}}
+
+    #STOP:0 K:1 N:2 I:3 R:4 S:5 T:6 Y:7 L:8 F:9 C:10
+    #W:11 E:12 D:13 V:14 G:15 A:16 Q:17 H:18 P:19 None:20
+
+    seq = seq.reshape((-1,3))
+    res = []
+    for codon in seq:
+        if np.any(codon == 0):
+            res.append(20)
+        else:
+            res.append(dic[codon[0]][codon[1]][codon[2]])
+    return np.array(res)
+
+def traduction_3_frames(seq):
+
+    dic = { 1:{1:{1:1, 2:2, 3:1, 4:2},
+              2:{1:3, 2:3, 3:20, 4:3},
+              3:{1:4, 2:5, 3:4, 4:5},
+              4:{1:6, 2:6, 3:6, 4:6}},
+            2:{1:{1:0, 2:7, 3:0, 4:7},
+              2:{1:8, 2:9, 3:8, 4:9},
+              3:{1:0, 2:10, 3:11, 4:10},
+              4:{1:5, 2:5, 3:5, 4:5}},
+            3:{1:{1:12, 2:13, 3:12, 4:13},
+              2:{1:14, 2:14, 3:14, 4:14},
+              3:{1:15, 2:15, 3:15, 4:15},
+              4:{1:16, 2:16, 3:16, 4:16}},
+            4:{1:{1:17, 2:18, 3:17, 4:18},
+              2:{1:8, 2:8, 3:8, 4:8},
+              3:{1:4, 2:4, 3:4, 4:4},
+              4:{1:19, 2:19, 3:19, 4:19}}}
+
+    #STOP:0 K:1 N:2 I:3 R:4 S:5 T:6 Y:7 L:8 F:9 C:10
+    #W:11 E:12 D:13 V:14 G:15 A:16 Q:17 H:18 P:19  
+
+    frames = []
+
+    f1 = seq[:len(seq) - len(seq) % 3]
+    frames.append(f1.reshape((-1,3)))
+
+    f2 = seq[1:]
+    f2 = f2[:(len(f2) - len(f2) % 3)]
+    frames.append(f2.reshape((-1,3)))
+
+    f3 = seq[2:]
+    f3 = f3[:(len(f3) - len(f3) % 3)]
+    frames.append(f3.reshape((-1,3)))
+
+    res = []
+
+    for frame in frames:
+        frame_res = []
+        for codon in frame:
+            frame_res.append(dic[codon[0]][codon[1]][codon[2]])
+        res.append(np.array(frame_res))
+    return res
+
+def encode_aa(seq):
+    dic = {'K':1, 'N':2, 'I':3, 'R':4, 'S':5, 'T':6, 'Y':7, 'L':8, 'F':9, 'C':10,'W':11,
+           'E':12, 'D':13, 'V':14, 'G':15, 'A':16, 'Q':17, 'H':18, 'P':19, 'M':20}
+    def encode(aa):
+        return dic[aa]
+    encode_vec = np.frompyfunc(encode, 1,1)
+    return encode_vec(seq).astype('int8')
+
+def load_data_prot(win, validation, mode):
+
+    data_pos = np.load(f'Uniprot/data_sprot_oh_w{win}.npy') # shape = (None, win , 21)
+    
+    if mode == 'randperm':    # random permut before split ?
+        data = np.append(data_pos, data_pos, axis=0)
+        data = data.reshape(data.shape[0],data.shape[1],data.shape[2],1)
+
+    elif mode == 'fromHS37':
+        files = os.listdir(f'Data/DNA/HS37/prot_OH')
+        dna = np.empty((0,21), dtype='int8')
+        indexes = np.array([], dtype=int)
+        sum_lenght = 0
+        for i, f in enumerate(files):
+            print(f'{i+1}/{len(files)}', end='\r')
+            chr = np.load(f'Data/DNA/HS37/prot_OH/{f}') # shape=(None, 21)
+            dna = np.append(dna, chr, axis=0)
+            indexes = np.append(indexes, np.arange(sum_lenght, sum_lenght + (len(chr) - win*3)))
+            sum_lenght += len(chr)
+        dna = sliding_window_view(dna, (win,21), axis=(0,1))  # shape = (None, win , 21)
+        dna = dna.reshape(dna.shape[0], dna.shape[2], dna.shape[3])
+        random_indexes = np.random.choice(indexes, len(data_pos), replace=False)
+        data_neg = dna[random_indexes]
+        data = np.append(data_pos, data_neg, axis=0)
+        data = data.reshape(data.shape[0],data.shape[1],data.shape[2],1)
+        
+        
+    elif mode == 'fullrand':
+        pass
+    else:
+        print('Wrong mode')
+        exit()
+    labels = np.append(np.ones(len(data)//2, dtype='int8'), np.zeros(len(data)//2, dtype='int8'))
+    indexes = np.arange(len(data),dtype='int32')
+    np.random.shuffle(indexes)
+    train_indexes = indexes[int(len(indexes)*validation):]
+    val_indexes = indexes[:int(len(indexes)*validation)]
+
+    return data, labels, train_indexes, val_indexes
+    
+
+ 
 

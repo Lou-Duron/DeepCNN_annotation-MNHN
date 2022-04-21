@@ -14,13 +14,218 @@ from tensorflow.keras import Input
 
 def Model_dic(window):
    dic = {}
-   dic['Conv_BiLSTM'] = Conv_BiLSTM(window)
-   dic['BiLSTM'] = BiLSTM(window)
-   dic['BasenjiBlocks'] = BasenjiBlocks(window)
-   dic['Conv'] = Conv(window)
+   #dic['Conv_BiLSTM'] = Conv_BiLSTM(window)
+   #dic['BiLSTM'] = BiLSTM(window)
+   #dic['BasenjiBlocks'] = BasenjiBlocks(window)
+   dic['Conv'] = Conv_DNA(window)
+   dic['Conv_prot'] = Conv_prot(window)
+   dic['Conv_prot2'] = Conv_prot2(window)
+   dic['Conv_prot3'] = Conv_prot3(window)
+   dic['Conv_prot4'] = Conv_prot4(window)
+   dic['Conv_prot5'] = Conv_prot5(window)
+   dic['Conv_prot6'] = Conv_prot6(window)
+   dic['Conv_prot7'] = Conv_prot7(window)
 
    return dic
 
+
+def Conv_prot(window):
+    
+   prot = Input(shape=(window, 21, 1))
+
+   x = Conv2D(64, (1,21),padding='valid')(prot)
+   x = ReLU()(x)
+
+   x = Conv2D(64, (4,1),padding='same')(x)
+   x = ReLU()(x)
+   x = Dropout(rate = 0.2)(x)
+
+   x = Conv2D(128, (4,1),padding='same')(x)
+   x = ReLU()(x)
+   x = Dropout(rate = 0.2)(x)
+
+   x = Flatten()(x)
+
+   x = Dense(128, activation = 'relu')(x)
+   x = Dropout(rate = 0.1)(x)
+
+   output = Dense(1, activation='sigmoid')(x)
+
+   model = Model(prot, output)
+    
+   return model
+
+def Conv_prot2(window):
+    
+   prot = Input(shape=(window, 21, 1))
+
+   x = Conv2D(64, (1,21),padding='valid')(prot)
+   x = ReLU()(x)
+
+   x = Conv2D(64, (4,1),padding='same')(x)
+   x = ReLU()(x)
+   x = Dropout(rate = 0.2)(x)
+   x = MaxPooling2D((2,1))(x)
+
+   x = Conv2D(128, (4,1),padding='same')(x)
+   x = ReLU()(x)
+   x = Dropout(rate = 0.2)(x)
+   x = MaxPooling2D((2,1))(x)
+
+   x = Flatten()(x)
+
+   x = Dense(128, activation = 'relu')(x)
+   x = Dropout(rate = 0.1)(x)
+
+   output = Dense(1, activation='sigmoid')(x)
+
+   model = Model(prot, output)
+    
+   return model
+
+def Conv_prot3(window):
+    
+   prot = Input(shape=(window, 21, 1))
+
+   x = Conv2D(64, (1,21),padding='valid')(prot)
+   x = ReLU()(x)
+
+   x = Conv2D(64, (2,1),padding='same')(x)
+   x = ReLU()(x)
+   x = Dropout(rate = 0.2)(x)
+   x = MaxPooling2D((2,1))(x)
+
+   x = Conv2D(128, (2,1),padding='same')(x)
+   x = ReLU()(x)
+   x = Dropout(rate = 0.2)(x)
+   x = MaxPooling2D((2,1))(x)
+
+   x = Flatten()(x)
+
+   x = Dense(128, activation = 'relu')(x)
+   x = Dropout(rate = 0.1)(x)
+
+   output = Dense(1, activation='sigmoid')(x)
+
+   model = Model(prot, output)
+    
+   return model
+
+def Conv_prot4(window):
+    
+   prot = Input(shape=(window, 21, 1))
+
+   x = Conv2D(64, (3,7),padding='valid')(prot)
+   x = ReLU()(x)
+   x = Dropout(rate = 0.2)(x)
+
+   x = Conv2D(64, (3,7),padding='valid')(x)
+   x = ReLU()(x)
+   x = Dropout(rate = 0.2)(x)
+
+   x = Conv2D(128, (3,7),padding='valid')(x)
+   x = ReLU()(x)
+   x = Dropout(rate = 0.2)(x)
+
+   x = Flatten()(x)
+
+   x = Dense(128, activation = 'relu')(x)
+   x = Dropout(rate = 0.1)(x)
+
+   output = Dense(1, activation='sigmoid')(x)
+
+   model = Model(prot, output)
+    
+   return model   
+
+def Conv_prot5(window):
+    
+   prot = Input(shape=(window, 21, 1))
+
+   x = Conv2D(64, (1,21),padding='valid')(prot)
+   x = ReLU()(x)
+
+   x = Conv2D(64, (2,1),padding='same')(x)
+   x = ReLU()(x)
+   x = Dropout(rate = 0.2)(x)
+
+   x = Conv2D(128, (4,1),padding='same')(x)
+   x = ReLU()(x)
+   x = Dropout(rate = 0.2)(x)
+
+   x = Conv2D(128, (10,1),padding='same')(x)
+   x = ReLU()(x)
+   x = Dropout(rate = 0.2)(x)
+
+   x = Flatten()(x)
+
+   x = Dense(128, activation = 'relu')(x)
+   x = Dropout(rate = 0.1)(x)
+
+   output = Dense(1, activation='sigmoid')(x)
+
+   model = Model(prot, output)
+    
+   return model
+
+def Conv_prot6(window):
+    
+   prot = Input(shape=(window, 21, 1))
+
+   x = Conv2D(64, (1,21),padding='valid')(prot)
+   x = ReLU()(x)
+
+   x = Conv2D(64, (10,1),padding='same')(x)
+   x = ReLU()(x)
+   x = Dropout(rate = 0.2)(x)
+   x = MaxPooling2D((2,1))(x)
+
+   x = Conv2D(128, (5,1),padding='same')(x)
+   x = ReLU()(x)
+   x = Dropout(rate = 0.2)(x)
+   x = MaxPooling2D((2,1))(x)
+
+   x = Flatten()(x)
+
+   x = Dense(128, activation = 'relu')(x)
+   x = Dropout(rate = 0.1)(x)
+
+   x = Dense(64, activation = 'relu')(x)
+   x = Dropout(rate = 0.1)(x)
+
+   output = Dense(1, activation='sigmoid')(x)
+
+   model = Model(prot, output)
+    
+   return model
+
+def Conv_prot7(window):
+    
+   prot = Input(shape=(window, 21, 1))
+
+   x = Conv2D(128, (1,21),padding='valid')(prot)
+   x = ReLU()(x)
+
+   x = Conv2D(128, (2,1),padding='same')(x)
+   x = ReLU()(x)
+   x = Dropout(rate = 0.2)(x)
+   x = MaxPooling2D((2,1))(x)
+
+   x = Conv2D(256, (2,1),padding='same')(x)
+   x = ReLU()(x)
+   x = Dropout(rate = 0.2)(x)
+   x = MaxPooling2D((2,1))(x)
+
+   x = Flatten()(x)
+
+   x = Dense(256, activation = 'relu')(x)
+   x = Dropout(rate = 0.1)(x)
+
+   output = Dense(1, activation='sigmoid')(x)
+
+   model = Model(prot, output)
+    
+   return model
 
 
 def Conv_BiLSTM_DNA(window):

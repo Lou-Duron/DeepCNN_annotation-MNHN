@@ -26,8 +26,6 @@ def parse_arguments():
                         help="Results prefix")
     parser.add_argument('-v', '--reverse', action='store_true',
                         help="Predict on strand -")
-    parser.add_argument('-d', '--dilated', action='store_true',
-                        help="Dilated Model architecture")
     parser.add_argument('-m', '--mcc', action='store_true',
                         help="Use mcc model")                        
     return parser.parse_args()
@@ -45,10 +43,7 @@ def main():
                                     custom_objects={'MCC': MCC,
                                                     'BA' : BA})
 
-    if args.dilated:
-        window_size = model.get_layer(index=0).input_shape[0][1]
-    else:
-        window_size = model.get_layer(index=0).input_shape[1]
+    window_size = model.get_layer(index=0).input_shape[1]
 
     print('Loading data')
 

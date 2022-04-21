@@ -23,26 +23,7 @@ def parse_arguments():
 
 def main():
     args = parse_arguments()
-    sp = ['Maca', # 88 artefacts
-          'HS37', # 6 artefacts
-          'Call', # 11 artefacts
-          'LeCa', # 1 Artefact
-          'PanP', # 34 artefacts
-          'Asia', # 13 artefacts + delete
-          'ASM2', #  416 artefacts + delete
-          'ASM7', # 32 artefacts
-          'Clin', # 26 artefacts <--- Pred
-          'Kami', # 49 artefacts
-          'Mmul', # 4 artefacts
-          'Panu', # 58 artefacts <--- Pred2
-          'Tgel', # 212 artefacts
-          'Cani',
-          'Dani',
-          'Equi',
-          'Feli',
-          'Gall',
-          'MusM',
-          'Orni']
+    sp = ['HS38']
     for species in sp:
         files = os.listdir(f'Data/Annotations/{species}/annot')
         out_file = open(f'Data/Annotations/{species}/{args.output}.csv','w')

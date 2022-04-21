@@ -26,8 +26,8 @@ def parse_arguments():
                         help="Results prefix")
     parser.add_argument('-v', '--reverse', action='store_true',
                         help="Predict on strand -")
-    parser.add_argument('-d', '--dilated', action='store_true',
-                        help="Dilated Model architecture")
+    parser.add_argument('-o', '--mode', default=1, type=int,
+                        help="Coverage mode")
     parser.add_argument('-m', '--mcc', action='store_true',
                         help="Use mcc model")                        
     return parser.parse_args()
@@ -45,26 +45,24 @@ def main():
                                     custom_objects={'MCC': MCC,
                                                     'BA' : BA})
 
-    if args.dilated:
-        window_size = model.get_layer(index=0).input_shape[0][1]
-    else:
-        window_size = model.get_layer(index=0).input_shape[1]
+    window_size = model.get_layer(index=0).input_shape[0][1]
 
     print('Loading data')
 
     if args.chromosome is not None:
 
-        data = load_data_one_chr_coverage(args.species, args.chromosome, window_size)
+        data = load_data_one_chr_coverage(args.species, args.chromosome, window_size, args.mode)
         #######
         dna = data[0][:10000000]
         pred = data[1][:10000000]
         data = [dna,pred]
         #######                         
-
+        print(data[0].shape, data[1].shape)
         pred_generator = Generator_Prediction_Coverage(data = data, 
-                                                        batch_size = 2048,
-                                                        window = window_size)
-
+                                                       batch_size = 1024,
+                                                       window = window_size, 
+                                                       mode = args.mode)
+        model.summary() 
         prediction = model.predict(pred_generator, verbose=1)
 
 
