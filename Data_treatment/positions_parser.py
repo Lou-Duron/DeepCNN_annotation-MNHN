@@ -44,7 +44,7 @@ def main():
 
     for species in species_list:
 
-        path = f'Data/Positions/{species}/exon_strand+'
+        path = f'Data/Positions/{species}/RNA_strand+'
         try:
             os.mkdir(path)
         except:
@@ -74,8 +74,6 @@ def main():
             DNA = DNA.astype('int8')
             
             ANNOT = annot[(annot.chr == chr_id )] 
-
-            print(ANNOT.shape)
 
             ANNOT_5 = ANNOT[(ANNOT.strand == '+')]
             ANNOT_3 = ANNOT[(ANNOT.strand == '-')]

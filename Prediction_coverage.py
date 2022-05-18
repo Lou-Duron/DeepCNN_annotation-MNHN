@@ -4,15 +4,15 @@
 Created on Wen Feb 23 14:44 2022
 @author: lou
 
-python Prediction_features.py -p multi3_RNA_start -s Panu -r test
+python Prediction_coverage.py -p multi3_RNA_start -s Panu -r test
 """
 import numpy as np
 import argparse
 import os
 from tensorflow import keras
 from ModuleLibrary.metrics import MCC, BA
-from ModuleLibrary.utils import load_data_one_chr_coverage
-from ModuleLibrary.generators import Generator_Prediction_Coverage
+from ModuleLibrary.data_loaders import load_data_one_chr
+from ModuleLibrary.generators import Generator_Prediction
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
@@ -51,17 +51,11 @@ def main():
 
     if args.chromosome is not None:
 
-        data = load_data_one_chr_coverage(args.species, args.chromosome, window_size, args.mode)
-        #######
-        dna = data[0][:10000000]
-        pred = data[1][:10000000]
-        data = [dna,pred]
-        #######                         
-        print(data[0].shape, data[1].shape)
-        pred_generator = Generator_Prediction_Coverage(data = data, 
+        data = load_data_one_chr(args.species, args.chromosome, window_size)
+                     
+        pred_generator = Generator_Prediction(data = data, 
                                                        batch_size = 1024,
-                                                       window = window_size, 
-                                                       mode = args.mode)
+                                                       window = window_size)
         model.summary() 
         prediction = model.predict(pred_generator, verbose=1)
 
@@ -83,10 +77,10 @@ def main():
         for file in files:
             chr_id = file.replace('.npy','')
             chr_id = chr_id.replace('chr','')
-            data = load_data_one_chr_coverage(args.species, chr_id, window_size,
+            data = load_data_one_chr(args.species, chr_id, window_size,
                                      args.reverse, padding=True)
 
-            pred_generator = Generator_Prediction_Coverage(data = data, 
+            pred_generator = Generator_Prediction(data = data, 
                                                   batch_size = 2048,
                                                   window = window_size)
 

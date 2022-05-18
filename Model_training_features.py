@@ -13,7 +13,7 @@ import os
 from ModuleLibrary.generators import Generator_Features
 from ModuleLibrary.metrics import MCC, BA
 from ModuleLibrary.models import Model_dic
-from ModuleLibrary.hyperparameters import check_pointer, class_weights, early_stopping
+from ModuleLibrary.callbacks import check_pointer, class_weights, early_stopping
 from ModuleLibrary.utils import load_data_features
 
 def parse_arguments():

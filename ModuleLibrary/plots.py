@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """
-Created on Tue Feb 15 10:55 2022
+Created on Tue Feb 15 2022
 @author: lou
 """
 
@@ -10,22 +10,23 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import h5py
-from tensorflow.keras.models import load_model
 from tensorflow.keras.models import Model
 from tensorflow import keras
-from sklearn.metrics import balanced_accuracy_score, confusion_matrix, matthews_corrcoef
 from ModuleLibrary.metrics import MCC, BA
 from ModuleLibrary.utils import sliding_window_view, OH_to_DNA
 
 def training_metrics(prefix):
-
+    '''
+    Metrics evolution plots
+    - prefix {str}: forlder name with training results
+    '''
     plt.style.use('seaborn-white')
 
     hist_loss = np.load(f'Results/{prefix}/loss.npy')
     hist_acc = np.load(f'Results/{prefix}/acc.npy')
     hist_MCC = np.load(f'Results/{prefix}/MCC.npy')
     hist_BA = np.load(f'Results/{prefix}/BA.npy')
-    
+
     hist_val_loss = np.load(f'Results/{prefix}/val_loss.npy')
     hist_val_acc = np.load(f'Results/{prefix}/val_acc.npy')
     hist_val_MCC = np.load(f'Results/{prefix}/val_MCC.npy')
@@ -54,52 +55,17 @@ def training_metrics(prefix):
 
     plt.show()
 
-def prediction_metrics(data_prefix, model_prefix):
-
-    plt.style.use('seaborn-white')
-
-    X_test = np.load(f'Input/{data_prefix}/X_test.npy')
-    Y_true = np.load(f'Input/{data_prefix}/Y_test.npy')
-    Y_true = Y_true.astype(np.float32).reshape((-1,1))
-
-    model = load_model(f'Results/{model_prefix}/model.hdf5',
-                        custom_objects={'MCC': MCC,
-                                        'BA': BA})
-
-    Y_pred = model.predict(X_test)
-    
-    treshold = np.arange(0.01, 1, 0.01)
-    
-    fn = np.array([])
-    tn = np.array([])
-    ba = np.array([])
-    mcc = np.array([])
-
-    for i in treshold:
-        Y_pred_tmp = (Y_pred >= i).astype('int8')
-        cm = confusion_matrix(Y_true, Y_pred_tmp)
-        p = cm[0][0] + cm[0][1]
-        n = cm[1][0] + cm[1][1]
-        fn = np.append(fn, cm[0][1]/p)
-        tn = np.append(tn, cm[1][1]/n)
-        ba = np.append(ba, balanced_accuracy_score(Y_true, Y_pred_tmp))
-        mcc = np.append(mcc, matthews_corrcoef(Y_true, Y_pred_tmp))
-    
-    figure, axis = plt.subplots(2, 1, constrained_layout=True, figsize=(8.5,5.5))
-
-    axis[0].plot(treshold, fn, label ='Gene wrongly predicted')
-    axis[0].plot(treshold, tn, label ='Gene correctly predicted')
-    axis[0].set_title("Coffusion matrix depending on treshold in %")
-    axis[0].legend()
-
-    axis[1].plot(treshold, ba, label='Balanced accuracy')
-    axis[1].plot(treshold, mcc, label='MCC')
-    axis[1].set_title('Metrics depending on treshold')
-    axis[1].legend()
-    plt.show()
-
 def prediction_density(pred_files, species, chr, annotation, win_range, mode='all', annot_end=False):
-    
+    '''
+    Plots prediction mean around target features
+    - pred_files {list(str)}: list of target file names
+    - species {str}: species name
+    - chr {str/int}: chromosome number
+    - annotation {str}: target features (GENE, CDS, EXON or RNA) 
+    - win_range {int}: range around target feature
+    - mode {str}: genomic strand to use (all, strand+ or strand-)
+    - annot_end {bool}: if True will check end of feature (example: Gene end)
+    '''
     annot = pd.read_csv(f'Data/Annotations/{species}/{annotation}.csv', sep = ',')
     annot = annot.drop_duplicates(subset=['chr', 'start', 'stop', 'strand'], keep='last') 
     annot = annot[(annot.chr == f'chr{chr}' )] 
@@ -153,7 +119,13 @@ def prediction_density(pred_files, species, chr, annotation, win_range, mode='al
     plt.show
 
 def prediction_quality(pred_files, species, chr, mode='all'):
-
+    '''
+    Plots of the prediction quality for coverage
+    - pred_files {list(str)}: list of target file names
+    - species {str}: species name
+    - chr {str/int}: chromosome number
+    - mode {str}: genomic strand to use (all, gene_strand+, gene_strand-, exon_strand+...etc)
+    '''
     positions = np.load(f'Data/Positions/{species}/{mode}/chr{chr}.npy')
             
     figure, axis = plt.subplots(1, len(pred_files), constrained_layout=True, figsize=(len(pred_files)*5,4))

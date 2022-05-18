@@ -23,7 +23,19 @@ def parse_arguments():
 
 def main():
     args = parse_arguments()
-    sp = ['HS38']
+    sp = ['Maca',#
+                #'HS37',#
+                'Call',# 
+                'LeCa',#
+                'PanP',#
+                'Asia',#
+                'ASM2',#
+                'Clin',# 
+                'Kami',#
+                'Mmul',#
+                'Panu',#
+                'Tgel'#
+                ]
     for species in sp:
         files = os.listdir(f'Data/Annotations/{species}/annot')
         out_file = open(f'Data/Annotations/{species}/{args.output}.csv','w')
