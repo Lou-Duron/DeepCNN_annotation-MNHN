@@ -1,22 +1,20 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
 """
 Created on Thu Feb 1 10:01 2022
-@author: lou
+@author: Lou Duron
 
-	This module contains the custom losses or metrics that can be used to train or to evaluate a neural network.
-	It is made to work as a usual loss or metric.
+This module contains the custom metrics that can be used to train
+or evaluate a model.
 """
 
 import tensorflow.keras.backend as K
 from tensorflow.python.ops import math_ops
-from sklearn.metrics import  confusion_matrix
-import math
-
-
 
 def MCC(y_true, y_pred):
-    '''Calculates the Matthews correlation coefficient measure for quality
+    '''
+    Calculates the Matthews correlation coefficient measure for quality
     of binary classification problems.
     '''
     y_pred_pos = K.round(K.clip(y_pred, 0, 1))
@@ -38,6 +36,9 @@ def MCC(y_true, y_pred):
 
 
 def recall(y_true, y_pred):
+    '''
+    Calculates the recall for quality of binary classification problems.
+    '''
     y_pred_pos = K.round(K.clip(y_pred, 0, 1))
     y_pred_neg = 1 - y_pred_pos
 
@@ -48,7 +49,11 @@ def recall(y_true, y_pred):
 
     return tp / (tp + fn)
 
+
 def precision(y_true, y_pred):
+    '''
+    Calculates the precision for quality of binary classification problems.
+    '''
     y_pred_pos = K.round(K.clip(y_pred, 0, 1))
 
     y_pos = K.round(K.clip(y_true, 0, 1))
@@ -59,7 +64,12 @@ def precision(y_true, y_pred):
 
     return tp / (tp + fp)
 
+
 def BA(y_true, y_pred):
+    '''
+    Calculates the Balanced accuracy for quality of binary classification 
+    problems.
+    '''
     y_pred_pos = K.round(K.clip(y_pred, 0, 1))
     y_pred_neg = 1 - y_pred_pos
 

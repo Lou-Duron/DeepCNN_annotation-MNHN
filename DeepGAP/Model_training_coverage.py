@@ -10,6 +10,8 @@ python Model_training_coverage.py -r HS37_coverage -m myModel1
 import numpy as np
 import argparse
 import os
+import sys
+sys.path.insert(0,'..')
 from ModuleLibrary.generators import Generator_Coverage
 from ModuleLibrary.metrics import MCC, BA
 from ModuleLibrary.models import Model_dic
@@ -44,26 +46,18 @@ def main():
 
     args = parse_arguments()
 
-    species_list = [#'Maca',
-                    'HS37', 
-                    #'Call', 
-                    #'LeCa',
-                    #'PanP', <---PRED
-                    #'Asia',
-                    #'ASM2', 
-                    #'ASM7',
-                    #'Clin', 
-                    #'Kami', 
-                    #'Mmul', 
-                    #'Panu',
-                    #'Tgel', 
-                    #'Cani',
-                    #'Dani',
-                    #'Equi',
-                    #'Feli',
-                    #'Gall',
-                    #'MusM',
-                    #'Orni'
+    species_list = ['Maca',
+                    'HS38', 
+                    'Call', 
+                    'LeCa',
+                    'PanP', 
+                    'Asia',
+                    'ASM2', 
+                    'Clin', 
+                    'Kami', 
+                    'Mmul', 
+                    'Panu',
+                    'Tgel', 
                     ]
     
     window = args.window

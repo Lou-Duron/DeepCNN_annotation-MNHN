@@ -1,16 +1,17 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
+
 """
 Created on Wen Apr 20 2022
-@author: lou
+@author: Lou Duron
+
+This module contains data loaders for training
 """
 
-import h5py
 import numpy as np
 import os
 import pandas as pd
 from ModuleLibrary.utils import get_reverse_complement_from_OH, sliding_window_view
-
 
 def load_data_one_chr(species, chr, window, reverse=False):
     '''
@@ -30,60 +31,13 @@ def load_data_one_chr(species, chr, window, reverse=False):
                                   sliding_window.shape[3],1)
     return data
 
-def load_data_one_chr_prot(species, chr, window, reverse=False):
 
-    h5 = h5py.File(f'Data/DNA/{species}/hdf5/chr{chr}.hdf5','r')
-    dna = np.array(h5['data']).astype('int8')
-    dna = dna.reshape(dna.shape[0])
-    dna = np.append(np.zeros(((window*3)//2),dtype='int8'), dna, axis=0)
-    dna = np.append(dna, np.zeros(((window*3)//2),dtype='int8'), axis=0)
-    data = sliding_window_view(dna, window*3)
-    return data
-
-def load_data_one_chr_coverage(species, chr, window, mode=1):
+def load_data_features_position(species_list, window, ratio, validation, features, mode):
     '''
-    Takes a species ID, a chromosome ID and a window size and load the 
-    corresponding data to give to a prediction generator. The data will 
-    be one hot encoded and loaded in a vectorized sliding window for 
-    better performances.
+    Load the corresponding data for feature position prediction to give 
+    to a training generator. The data will be one hot encoded and loaded 
+    in a vectorized sliding window for better performances.
     '''
-    data = []
-
-    f = np.load(f'Data/DNA/{species}/one_hot/chr{chr}.npy').astype('int8')
-    f = np.append(np.zeros((window//2,4),dtype='int8'), f, axis=0)
-    f = np.append(f, np.zeros((window//2,4),dtype='int8'), axis=0)
-
-    sliding_window = sliding_window_view(f, (window,4), axis=(0,1))
-    dna = sliding_window.reshape(sliding_window.shape[0],
-                                  sliding_window.shape[2], 
-                                  sliding_window.shape[3],1)
-    data.append(dna)
-
-    pred_list = []
-    pred_list.append(np.load(f'Predictions/{species}_gene_start/chr{chr}.npy'))
-    pred_list.append(np.load(f'Predictions/{species}_gene_stop/chr{chr}.npy'))
-    if mode > 1:
-        pred_list.append(np.load(f'Predictions/{species}_exon_start/chr{chr}.npy'))
-        pred_list.append(np.load(f'Predictions/{species}_exon_stop/chr{chr}.npy'))
-    if mode > 2:
-        pred_list.append(np.load(f'Predictions/{species}_rna_start/chr{chr}.npy'))
-        pred_list.append(np.load(f'Predictions/{species}_rna_stop/chr{chr}.npy'))
-
-    pred = np.array(pred_list)
-    pred = np.reshape(pred.flatten(order='F'), (pred.shape[1],pred.shape[0]))
-    pred = np.append(np.zeros((window//2,mode*2),dtype='float32'), pred, axis=0)
-    pred = np.append(pred, np.zeros((window//2,mode*2),dtype='float32'), axis=0)
-
-    pred = sliding_window_view(pred, (window,mode*2), axis=(0,1))
-    pred = pred.reshape(pred.shape[0],
-                      pred.shape[2], 
-                      pred.shape[3],1)  
-    data.append(pred)
-
-    return data
-
-def load_data_features(species_list, window, ratio, validation, features, mode, chr_nb):
-
     data = np.zeros((window//2,4),dtype='int8')
     indexes = np.array([], dtype=int)
     labels = np.array([], dtype='int8')
@@ -137,9 +91,6 @@ def load_data_features(species_list, window, ratio, validation, features, mode, 
             np.random.shuffle(indexes_chr)
 
             indexes_chr = np.append(positions, indexes_chr[:len(positions)*ratio])
-
-            
-
             indexes_chr = indexes_chr + total_len
             indexes = np.append(indexes, indexes_chr)
             total_len += len(chr) + (window // 2)
@@ -158,8 +109,13 @@ def load_data_features(species_list, window, ratio, validation, features, mode, 
 
     return data, labels, train_indexes, val_indexes
     
-def load_data_gene_coverage(species_list, window, step, validation, mode, chr_nb, features):
 
+def load_data_coverage(species_list, window, step, validation, mode, chr_nb, features):
+    '''
+    Load the corresponding data for coverage prediction to give to a training 
+    generator. The data will be one hot encoded and loaded in a vectorized 
+    sliding window for better performances.
+    '''
     dna = np.zeros((window//2,4),dtype='int8')
     pred = np.zeros((window//2,mode*2),dtype='float32')
     indexes = np.array([], dtype=int)
@@ -235,8 +191,6 @@ def load_data_gene_coverage(species_list, window, step, validation, mode, chr_nb
     tmp = labels[indexes]
     ratio = len(tmp[tmp==0])/len(tmp[tmp==1])
 
-    
-
     np.random.shuffle(indexes)
 
     train_indexes = indexes[int(len(indexes)*validation):]
@@ -244,40 +198,4 @@ def load_data_gene_coverage(species_list, window, step, validation, mode, chr_nb
 
     return dna, pred, labels, ratio, train_indexes, val_indexes
 
-def load_data_prot(win, validation, mode, ratio):
-
-    data_pos = np.load(f'Uniprot/data_sprot_oh_w{win}.npy') # shape = (None, win , 21)
-    
-    if mode == 'randperm':    # random permut before split ?
-        data = np.append(data_pos, data_pos, axis=0)
-        data = data.reshape(data.shape[0],data.shape[1],data.shape[2],1)
-
-    elif mode == 'fromHS37':
-        files = os.listdir(f'Data/DNA/HS37/prot_OH')
-        dna = np.empty((0,21), dtype='int8')
-        indexes = np.array([], dtype=int)
-        sum_lenght = 0
-        for i, f in enumerate(files):
-            print(f'{i+1}/{len(files)}', end='\r')
-            chr = np.load(f'Data/DNA/HS37/prot_OH/{f}') # shape=(None, 21)
-            dna = np.append(dna, chr, axis=0)
-            indexes = np.append(indexes, np.arange(sum_lenght, sum_lenght + (len(chr) - win*3)))
-            sum_lenght += len(chr)
-        dna = sliding_window_view(dna, (win,21), axis=(0,1))  # shape = (None, win , 21)
-        dna = dna.reshape(dna.shape[0], dna.shape[2], dna.shape[3])
-
-        random_indexes = np.random.choice(indexes, len(data_pos)*ratio, replace=False)
-        data_neg = dna[random_indexes]
-        data = np.append(data_pos, data_neg, axis=0)
-        data = data.reshape(data.shape[0],data.shape[1],data.shape[2],1)
-    else:
-        print('Wrong mode')
-        exit()
-    labels = np.append(np.ones(len(data)//2, dtype='int8'), np.zeros(len(data)//2, dtype='int8'))
-    indexes = np.arange(len(data),dtype='int32')
-    np.random.shuffle(indexes)
-    train_indexes = indexes[int(len(indexes)*validation):]
-    val_indexes = indexes[:int(len(indexes)*validation)]
-
-    return data, labels, train_indexes, val_indexes
     

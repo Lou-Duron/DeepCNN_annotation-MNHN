@@ -2,23 +2,13 @@
 !/Data/**/
 !/Data/**/.gitkeep
 
-/Predictions/**
-!/Predictions/**/
-!/Predictions/**/.gitkeep
+DeepGAP/Predictions/**
+!DeepGAP/Predictions/**/
+!DeepGAP/Predictions/**/.gitkeep
 
-/Results/**
-!/Results/**/
-!/Results/**/.gitkeep
-
-/kmermap/**
+DeepGAP/Results/**
+!DeepGAP/Results/**/
+!DeepGAP/Results/**/.gitkeep
 
 /Archive/**
-!/Archive/**/
-!/Archive/**/.gitkeep
 
-/Other/**
-/Uniprot/**
-
-playground.ipynb
-Pipeline.sh
-colorbar.png

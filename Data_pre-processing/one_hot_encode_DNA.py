@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
 """
 Created on Tue Feb 22 16:18 2022
-@author: lou
+@author: Lou Duron
+
+This program takes DNA sequences in hdf5 format and
+creates int8 numpy arrays of the sequence one_hot encoded
 
 Example of use :
-python Data_treatment/one_hot_encode_DNA.py -p HomoSapiens37
+python one_hot_encode_DNA.py -d Data/DNA/HS38/hdf5
 """
+
 import argparse
 import os
 import h5py
@@ -15,22 +20,23 @@ from ModuleLibrary.utils import one_hot_encoding_seq
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-p', '--prefix',
-                        help="Directory containing the gff files")
+    parser.add_argument('-d', '--directory',
+                        help="Directory containing the DNA files in hdf5 format")
     return parser.parse_args()
 
 def main():
     args = parse_arguments()
 
-    files = os.listdir(f'Data/DNA/{args.prefix}/hdf5')
+    files = os.listdir(args.directory)
+    out_dir = args.directory.replace('hdf5','one_hot')
 
     try:
-        os.mkdir(f'Data/DNA/{args.prefix}/one_hot')
+        os.mkdir(out_dir)
     except:
         print("Overwriting")
 
     for file in files:
-        f = h5py.File(f'Data/DNA/{args.prefix}/hdf5/{file}','r')
+        f = h5py.File(f'{args.directory}/{file}','r')
         DNA = np.array(f['data'])
         f.close()
         DNA = DNA.reshape(DNA.shape[0],)
@@ -40,7 +46,7 @@ def main():
 
         name = file.replace('.hdf5','')
 
-        np.save(f'Data/DNA/{args.prefix}/one_hot/{name}.npy', OH)
+        np.save(f'{out_dir}/{name}.npy', OH)
 
 if __name__ == '__main__':
     main()

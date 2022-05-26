@@ -1,19 +1,27 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
+
 """
 Created on Mon Jan 24 15:30 2022
-@author: lou
+@author: Lou Duron
+
+This module contains callback for model training
 """
+
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, Callback
 
 def class_weights(ratio):
+    '''
+    Returns class weights
+    '''
     cw = {0 : ((ratio + 1) / 2) / ratio, 1 : ((ratio + 1) / 2)}
-    print(f'Class weights : {cw}')
     return cw
 
 
 def check_pointer(path):
-
+    '''
+    Saves best metrics model weights 
+    '''
     checkpointer = ModelCheckpoint(filepath=f'{path}/best_metrics_model.hdf5',
                                 monitor='val_MCC',
                                 mode='max', 
@@ -24,7 +32,9 @@ def check_pointer(path):
     return checkpointer
 
 def early_stopping():
-
+    '''
+    Stops training if validation loss didn't improve for 5 epochs in a row
+    '''
     early = EarlyStopping(monitor='val_loss', 
                             min_delta=0, 
                             patience=5, 
@@ -35,6 +45,9 @@ def early_stopping():
 
 
 def batch_history(): 
+    '''
+    Saves the metrics evolution each batch
+    '''
     class History(Callback):
         def on_train_begin(self, logs={}):
             self.losses = []

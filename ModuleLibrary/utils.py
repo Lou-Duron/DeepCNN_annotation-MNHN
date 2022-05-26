@@ -1,8 +1,12 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
+
 """
 Created on Wen Jan 26 2022
-@author: lou
+@author: Lou Duron
+
+This module contains all sort of utils function used
+in other modules.
 """
 
 import numpy as np

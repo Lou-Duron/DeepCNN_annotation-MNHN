@@ -1,30 +1,37 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
 """
-Created on Fri Jan 7 9:22 2020
-@author: Routhier
+Created on Fri Jan 7 9:22 2022
+@author: Lou Duron
 
 This program takes .fa or .fa.gz files and convert them to .hdf5 files.
 If the output directory is not specified, the hdf5 files will be created in
 the same directory as the fasta files.
 
 Example of use :
-python Data_treatment/fasta_to_hdf5.py
+python fasta_to_hdf5.py -i input_directory/ -o output_directory/
 """
 
 import gzip
 import re
 import os
-
+import argparse
 import numpy as np
 import h5py
 from Bio import SeqIO
 
-
+def parse_arguments():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-i', '--input',
+                        help="Input derectory")
+    parser.add_argument('-o', '--output',
+                        help="Output directory")
+    return parser.parse_args()
 
 def converter():
     """
-        Dictionnary used to convert DNA sequence into number.
+    Dictionnary used to convert DNA sequence into number.
     """
     dconv = {}
     dconv["N"] = 0
@@ -51,32 +58,26 @@ def converter():
     dconv["X"] = 0
     return dconv
 
-def convert_char(char):
-    """
-        Convert one character.
-    """
-    conv = converter()
-    return conv[char]
-
 def convert_seq(seq):
     """
-        Convert a sequence.
+    Convert a sequence.
     """
     i = 0
     L = len(seq)
+    conv = converter()
     seqL = np.zeros((L, 1))
     while i < L:
         if i % 10000 == 0:
             print(f"In progress : {round(i/L*100,1)}%", end = "\r")
-        seqL[i] = convert_char(seq[i])
+        seqL[i] = conv[seq[i]]
         i += 1
     return seqL, L
 
 def fa_converter(in_file, path_to_out_file):
     '''
-        Takes a .fa file converts it into an .hdf5 file.
-        filenamin: the .fa file that need to be converted (or a .fa.gz file),
-        one chromosome only.
+    Takes a .fa file converts it into an .hdf5 file.
+    filenamin: the .fa file that need to be converted (or a .fa.gz file),
+    one chromosome only.
     '''
     if re.match(r'.*\.fa$', os.path.basename(in_file)):
         fasta = open(in_file, 'rt')
@@ -94,27 +95,29 @@ def fa_converter(in_file, path_to_out_file):
     hdf5.close()
     fasta.close()
 
-
-
-def main(command_line_arguments=None):
+def main():
     """
-        Converts the .fa sequence file in a directory to .hdf5 file
-        (all the file chr*.fa in the directory).
+    Converts the .fa sequence file in a directory to .hdf5 file
+    (all the file chr*.fa in the directory).
     """
 
-    files = ['Cani','Dani','Equi','Feli','Gall','MusM','Orni']
-    for file in files:
-        in_dir = f'Data/DNA/{file}/fasta'
-        out_dir = f'Data/DNA/{file}/hdf5'
+    args = parse_arguments()
+
+    in_dir = args.input
+    if args.output is not None:
+        out_dir = args.output
         try:
             os.mkdir(out_dir)
         except:
-            print("Overwriting")
-        for element in os.listdir(in_dir):
-            if re.match(r'chr\w+.?\.fa', element):
-                num = re.search('chr\w+.?\.', element)
-                fa_converter(os.path.join(in_dir, element),
-                            os.path.join(out_dir, num.group(0) + 'hdf5'))
+            print("Output directory already exists, overwriting")
+    else:
+        out_dir = args.input
+
+    for element in os.listdir(in_dir):
+        if re.match(r'chr\w+.?\.fa', element):
+            num = re.search('chr\w+.?\.', element)
+            fa_converter(os.path.join(in_dir, element),
+                        os.path.join(out_dir, num.group(0) + 'hdf5'))
             
 if __name__ == '__main__':
     main()
