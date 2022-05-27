@@ -98,7 +98,8 @@ def one_hot_prot(arr):
     arr_one_hot = bool.astype('int8')
     return arr_one_hot
 
-def sliding_window_view(x, window_shape, axis=None, *, subok=False, writeable=False):
+def sliding_window_view(x, window_shape, axis=None, *, subok=False,
+                        writeable=False):
     '''
     Takes an numpy array and a window size and return a vectorized
     sliding window. 
@@ -121,7 +122,8 @@ def sliding_window_view(x, window_shape, axis=None, *, subok=False, writeable=Fa
                              f'got {len(window_shape)} window_shape elements '
                              f'and `x.ndim` is {x.ndim}.')
     else:
-        axis = np.core.numeric.normalize_axis_tuple(axis, x.ndim, allow_duplicate=True)
+        axis = np.core.numeric.normalize_axis_tuple(axis, x.ndim, 
+                                                    allow_duplicate=True)
         if len(window_shape) != len(axis):
             raise ValueError(f'Must provide matching length window_shape and '
                              f'axis; got {len(window_shape)} window_shape '
@@ -137,8 +139,8 @@ def sliding_window_view(x, window_shape, axis=None, *, subok=False, writeable=Fa
                 'window shape cannot be larger than input array shape')
         x_shape_trimmed[ax] -= dim - 1
     out_shape = tuple(x_shape_trimmed) + window_shape
-    return np.lib.stride_tricks.as_strided(x, strides=out_strides, shape=out_shape,
-                      subok=subok, writeable=writeable)
+    return np.lib.stride_tricks.as_strided(x, strides=out_strides, 
+                shape=out_shape, subok=subok, writeable=writeable)
 
 def traduction(arr):
     '''
@@ -206,6 +208,19 @@ def encode_aa(seq):
         return dic[aa]
     encode_vec = np.frompyfunc(encode, 1,1)
     return encode_vec(seq).astype('int8')
+
+def padding_slidding(input, kernel):
+    '''
+    Takes an array in input and a kernel shape and 
+    return the coressponding sliding window taking
+    into account padding.
+    '''
+    arr = np.append(np.zeros(((kernel // 2) + ((kernel % 2) - 1),input.shape[1])),
+                    input, axis=0) 
+    arr = np.append(arr, np.zeros((kernel//2,input.shape[1])), axis=0)
+    arr = sliding_window_view(arr, kernel, axis=0)
+    output = arr.flatten(order='K').reshape((input.shape[0],kernel,input.shape[1]))
+    return output
 
 
 

@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
 """
 Created on Wed Jan 19 15:52 2022
-@author: lou
+@author: Lou Duron
 
 Example of use :
 python Model_training_coverage.py -r HS37_coverage -m myModel1
 """
+
 import numpy as np
 import argparse
 import os
@@ -16,7 +18,7 @@ from ModuleLibrary.generators import Generator_Coverage
 from ModuleLibrary.metrics import MCC, BA
 from ModuleLibrary.models import Model_dic
 from ModuleLibrary.callbacks import check_pointer, class_weights, early_stopping
-from ModuleLibrary.utils import load_data_gene_coverage
+from ModuleLibrary.data_loaders import load_data_gene_coverage
 
 def parse_arguments():
     parser = argparse.ArgumentParser()

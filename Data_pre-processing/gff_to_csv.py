@@ -32,7 +32,8 @@ def main():
     out_file.write("chr,start,stop,strand\n")
     for file in files:
         print(f'Converting the file : {file}')
-        df = pd.read_csv(f'Data/Annotations/{args.species}/annot/{file}', sep = '\t', dtype={5: str})
+        df = pd.read_csv(f'Data/Annotations/{args.species}/annot/{file}',
+                         sep = '\t', dtype={5: str})
         chr_name = file.replace('.gff3','')
         chr_name = file.replace('.gff','')
         df = df[df.type == args.type]

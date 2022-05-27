@@ -103,7 +103,7 @@ class Generator_Coverage(Sequence):
             np.random.shuffle(self.indexes)
 
 
-class Generator_Prediction_features(Sequence):
+class Generator_Prediction_Features(Sequence):
     '''
     Generator that feeds data to the model each batch
     for feature position prediction.
@@ -120,14 +120,16 @@ class Generator_Prediction_features(Sequence):
         return int(np.floor(len(self.data) / self.batch_size)) + 1
 
     def get_last_batch_size(self):
-        last_batch_size = len(self.data) - (self.batch_size * (self.__len__() - 1))
+        last_batch_size = len(self.data) - (self.batch_size*(self.__len__()-1))
         return last_batch_size
 
     def __getitem__(self, index):
         if index == self.__len__() - 1:
-            batch_indexes = self.indexes[index*self.batch_size:(index*self.batch_size)+self.get_last_batch_size()]
+            batch_indexes = self.indexes[index*self.batch_size:
+            (index*self.batch_size)+self.get_last_batch_size()]
         else:
-            batch_indexes = self.indexes[index*self.batch_size:(index+1)*self.batch_size]
+            batch_indexes = self.indexes[index*self.batch_size:
+                                        (index+1)*self.batch_size]
         X = self.__data_generation(batch_indexes)
         return X
 
@@ -159,14 +161,16 @@ class Generator_Prediction_Coverage(Sequence):
         return int(np.floor(len(self.data[0]) / self.batch_size)) + 1
 
     def get_last_batch_size(self):
-        last_batch_size = len(self.data[0]) - (self.batch_size * (self.__len__() - 1))
+        last_batch_size = len(self.data[0])-(self.batch_size*(self.__len__()-1))
         return last_batch_size
 
     def __getitem__(self, index):
         if index == self.__len__() - 1:
-            batch_indexes = self.indexes[index*self.batch_size:(index*self.batch_size)+self.get_last_batch_size()]
+            batch_indexes = self.indexes[index*self.batch_size:
+            (index*self.batch_size)+self.get_last_batch_size()]
         else:
-            batch_indexes = self.indexes[index*self.batch_size:(index+1)*self.batch_size]
+            batch_indexes = self.indexes[index*self.batch_size:
+                                        (index+1)*self.batch_size]
         DNA, PRED = self.__data_generation(batch_indexes)
         return [DNA, PRED]
 

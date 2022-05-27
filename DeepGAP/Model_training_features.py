@@ -1,20 +1,24 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
 """
 Created on Wed Jan 19 15:52 2022
-@author: lou
+@author: Lou Duron
 
 Example of use :
 python Model_training_features.py -s genesHS37 -m myModel1 -f GENE -d start
 """
+
 import numpy as np
 import argparse
 import os
+import sys
+sys.path.insert(0,'..')
 from ModuleLibrary.generators import Generator_Features
 from ModuleLibrary.metrics import MCC, BA
 from ModuleLibrary.models import Model_dic
 from ModuleLibrary.callbacks import check_pointer, class_weights, early_stopping
-from ModuleLibrary.utils import load_data_features
+from ModuleLibrary.data_loaders import load_data_features
 
 def parse_arguments():
     parser = argparse.ArgumentParser()

@@ -1,18 +1,22 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
 """
 Created on Wen Feb 23 14:44 2022
-@author: lou
+@author: Lou Duron
 
 python Prediction_coverage.py -p multi3_RNA_start -s Panu -r test
 """
+
 import numpy as np
 import argparse
 import os
+import sys
+sys.path.insert(0,'..')
 from tensorflow import keras
 from ModuleLibrary.metrics import MCC, BA
 from ModuleLibrary.data_loaders import load_data_one_chr
-from ModuleLibrary.generators import Generator_Prediction
+from ModuleLibrary.generators import Generator_Prediction_Coverage
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
@@ -21,7 +25,7 @@ def parse_arguments():
     parser.add_argument('-s', '--species', type=str,
                         help="Target species")
     parser.add_argument('-c', '--chromosome', type=str,
-                        help="Taget chromosome")
+                        help="Target chromosome")
     parser.add_argument('-r', '--result', 
                         help="Results prefix")
     parser.add_argument('-v', '--reverse', action='store_true',
@@ -53,7 +57,7 @@ def main():
 
         data = load_data_one_chr(args.species, args.chromosome, window_size)
                      
-        pred_generator = Generator_Prediction(data = data, 
+        pred_generator = Generator_Prediction_Coverage(data = data, 
                                                        batch_size = 1024,
                                                        window = window_size)
         model.summary() 

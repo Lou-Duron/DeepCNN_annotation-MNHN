@@ -1,18 +1,22 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
 """
 Created on Wen Feb 23 14:44 2022
-@author: lou
+@author: Lou Duron
 
 python Prediction_features.py -p multi3_RNA_start -s Panu -r test
 """
+
 import numpy as np
 import argparse
 import os
+import sys
+sys.path.insert(0,'..')
 from tensorflow import keras
 from ModuleLibrary.metrics import MCC, BA
-from ModuleLibrary.utils import load_data_one_chr
-from ModuleLibrary.generators import Generator_Prediction
+from ModuleLibrary.data_loaders import load_data_one_chr
+from ModuleLibrary.generators import Generator_Prediction_Features
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
@@ -52,11 +56,8 @@ def main():
         data = load_data_one_chr(args.species, args.chromosome, window_size,
                                  args.reverse)
 
-        #######
-        data = data[:1000000]
-        ####### 
 
-        pred_generator = Generator_Prediction(data = data, 
+        pred_generator = Generator_Prediction_Features(data = data, 
                                               batch_size = 2048,
                                               window = window_size)
 

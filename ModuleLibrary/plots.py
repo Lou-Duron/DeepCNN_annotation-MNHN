@@ -12,12 +12,7 @@ prediction analysis.
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import matplotlib.colors as mcolors
 import h5py
-from tensorflow.keras.models import Model
-from tensorflow import keras
-from ModuleLibrary.metrics import MCC, BA
-from ModuleLibrary.utils import sliding_window_view, OH_to_DNA
 
 def training_metrics(prefix):
     '''
@@ -38,7 +33,8 @@ def training_metrics(prefix):
 
     epochs = np.arange(1, len(hist_loss) + 1 )
 
-    figure, axis = plt.subplots(2, 2, constrained_layout=True, figsize=(8.5,5.5))
+    figure, axis = plt.subplots(2, 2, constrained_layout=True,
+                                figsize=(8.5,5.5))
     
     axis[0, 0].plot(epochs, hist_loss, label ='Training')
     axis[0, 0].plot(epochs, hist_val_loss, label ='Validation')
@@ -59,7 +55,8 @@ def training_metrics(prefix):
 
     plt.show()
 
-def prediction_density(pred_files, species, chr, annotation, win_range, mode='all', annot_end=False):
+def prediction_density(pred_files, species, chr, annotation, win_range,
+                       mode='all', annot_end=False):
     '''
     Plots prediction mean around target features
     - pred_files {list(str)}: list of target file names
@@ -70,8 +67,10 @@ def prediction_density(pred_files, species, chr, annotation, win_range, mode='al
     - mode {str}: genomic strand to use (all, strand+ or strand-)
     - annot_end {bool}: if True will check end of feature (example: Gene end)
     '''
-    annot = pd.read_csv(f'Data/Annotations/{species}/{annotation}.csv', sep = ',')
-    annot = annot.drop_duplicates(subset=['chr', 'start', 'stop', 'strand'], keep='last') 
+    annot = pd.read_csv(f'Data/Annotations/{species}/{annotation}.csv',
+                        sep = ',')
+    annot = annot.drop_duplicates(subset=['chr', 'start', 'stop', 'strand'],
+                                  keep='last') 
     annot = annot[(annot.chr == f'chr{chr}' )] 
     annot_5 = annot[(annot.strand == '+')]
     annot_3 = annot[(annot.strand == '-')]
@@ -84,7 +83,8 @@ def prediction_density(pred_files, species, chr, annotation, win_range, mode='al
     annot_5_index = annot_5_index -1
     annot_3_index = annot_3_index -1
         
-    figure, axis = plt.subplots(1, len(pred_files), constrained_layout=True, figsize=(len(pred_files)*5,4))
+    figure, axis = plt.subplots(1, len(pred_files), constrained_layout=True,
+                                figsize=(len(pred_files)*5,4))
     for num,pred_file in enumerate(pred_files):
         pred = np.load(f'Predictions/{pred_file}')
         pred = pred.reshape(pred.shape[0])
@@ -128,11 +128,12 @@ def prediction_quality(pred_files, species, chr, mode='all'):
     - pred_files {list(str)}: list of target file names
     - species {str}: species name
     - chr {str/int}: chromosome number
-    - mode {str}: genomic strand to use (all, gene_strand+, gene_strand-, exon_strand+...etc)
+    - mode {str}: genomic strand to use (all, gene_strand+, exon_strand-...etc)
     '''
     positions = np.load(f'Data/Positions/{species}/{mode}/chr{chr}.npy')
             
-    figure, axis = plt.subplots(1, len(pred_files), constrained_layout=True, figsize=(len(pred_files)*5,4))
+    figure, axis = plt.subplots(1, len(pred_files), constrained_layout=True, 
+                                figsize=(len(pred_files)*5,4))
     for num,pred_file in enumerate(pred_files):
         pred = np.load(f'Predictions/{pred_file}')
         pred = pred.reshape(pred.shape[0])
@@ -154,7 +155,8 @@ def prediction_quality(pred_files, species, chr, mode='all'):
             plot = plt
             plot.title(name)
 
-        plot.boxplot(x, labels=labels, showmeans=True, meanline=True, widths=0.6, showfliers=False)
+        plot.boxplot(x, labels=labels, showmeans=True, meanline=True, 
+                     widths=0.6, showfliers=False)
         if len(pred_files) > 1:
             plot.set_title(name)
     plt.show
@@ -189,12 +191,15 @@ class Chromosome_prediction():
             pred = pred.reshape(pred.shape[0],)
             if conv != 0:
                 pred = np.convolve(pred, np.ones(conv), 'valid') / conv
-                self.GC_cont = np.convolve((self.DNA>=3).astype('int8') , np.ones(conv), 'valid') / conv
+                self.GC_cont = np.convolve((self.DNA>=3).astype('int8'), 
+                                            np.ones(conv), 'valid') / conv
             self.preds.append(pred)
 
     def update_annotation(self, annotation_type):
-        annot = pd.read_csv(f'Data/Annotations/{self.species}/{annotation_type}.csv', sep = ',')
-        annot = annot.drop_duplicates(subset=['chr','stop', 'start', 'strand'], keep='last') 
+        annot = pd.read_csv(f'Data/Annotations/{self.species}/{annotation_type}.csv',
+                            sep = ',')
+        annot = annot.drop_duplicates(subset=['chr','stop', 'start', 'strand'],
+                                      keep='last') 
         annot = annot[(annot.chr == f'chr{self.chr_nb}' )] 
         annot_5 = annot[(annot.strand == '+')]
         annot_3 = annot[(annot.strand == '-')]

@@ -32,7 +32,8 @@ def load_data_one_chr(species, chr, window, reverse=False):
     return data
 
 
-def load_data_features_position(species_list, window, ratio, validation, features, mode):
+def load_data_features_position(species_list, window, ratio, validation, 
+                                features, mode):
     '''
     Load the corresponding data for feature position prediction to give 
     to a training generator. The data will be one hot encoded and loaded 
@@ -45,8 +46,10 @@ def load_data_features_position(species_list, window, ratio, validation, feature
 
     for species in species_list:
         files = os.listdir(f'Data/DNA/{species}/one_hot')
-        annot = pd.read_csv(f'Data/Annotations/{species}/{features}.csv', sep = ',')
-        annot = annot.drop_duplicates(subset=['chr', 'stop', 'start', 'strand'], keep='last') 
+        annot = pd.read_csv(f'Data/Annotations/{species}/{features}.csv', 
+                            sep = ',')
+        annot = annot.drop_duplicates(subset=['chr', 'stop', 'start', 'strand'],
+                                      keep='last') 
         if len(species_list) == 1:
             files.sort()
             files.remove(files[0])
@@ -110,7 +113,8 @@ def load_data_features_position(species_list, window, ratio, validation, feature
     return data, labels, train_indexes, val_indexes
     
 
-def load_data_coverage(species_list, window, step, validation, mode, chr_nb, features):
+def load_data_coverage(species_list, window, step, validation, mode, 
+                       chr_nb, features):
     '''
     Load the corresponding data for coverage prediction to give to a training 
     generator. The data will be one hot encoded and loaded in a vectorized 
@@ -124,8 +128,10 @@ def load_data_coverage(species_list, window, step, validation, mode, chr_nb, fea
 
     for species in species_list:
         files = os.listdir(f'Data/DNA/{species}/one_hot')
-        annot = pd.read_csv(f'Data/Annotations/{species}/{features}.csv', sep = ',')
-        annot = annot.drop_duplicates(subset=['chr', 'stop', 'start', 'strand'], keep='last')
+        annot = pd.read_csv(f'Data/Annotations/{species}/{features}.csv',
+                            sep = ',')
+        annot = annot.drop_duplicates(subset=['chr', 'stop', 'start', 'strand'],
+                                      keep='last')
         if len(species_list) == 1:
             files.sort()
             files.remove(files[0])
@@ -154,7 +160,8 @@ def load_data_coverage(species_list, window, step, validation, mode, chr_nb, fea
             labels = np.append(labels, lab)
             labels = np.append(labels, np.zeros(window//2, dtype='int8'))
 
-            indexes = np.append(indexes, np.arange(total_len, total_len+len(chr)+1, step= step))
+            indexes = np.append(indexes, np.arange(total_len, total_len+len(chr)+1,
+                                step= step))
             total_len += len(chr) + (window // 2)
 
             
@@ -170,7 +177,8 @@ def load_data_coverage(species_list, window, step, validation, mode, chr_nb, fea
                     pred_list.append(np.load(f'Predictions/{species}_rna_stop/{f}'))
 
                 chr_pred = np.array(pred_list)
-                chr_pred = np.reshape(chr_pred.flatten(order='F'), (chr_pred.shape[1],chr_pred.shape[0]))
+                chr_pred = np.reshape(chr_pred.flatten(order='F'), (chr_pred.shape[1],
+                                      chr_pred.shape[0]))
                 pred = np.append(pred, chr_pred, axis=0)
                 pred = np.append(pred, np.zeros((window//2,mode*2),dtype='float32'), axis=0)
                 
