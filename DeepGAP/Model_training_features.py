@@ -5,8 +5,20 @@
 Created on Wed Jan 19 15:52 2022
 @author: Lou Duron
 
+Model training for features position on sequences:
+    --results, -r, {str} : Result suffix used
+    --species, -s, {list(str)} : List of species ID to train on
+    --model, -m, {str} : Model to use
+    --feature, -f, {str} : Feature to use (GENE, EXON, RNA...etc)
+    --mode, -d, {str} : Feature mode to use (start or stop)
+    --ratio, -t, {int} : Ratio between positive and negative examples
+    --epochs, -e, {int} : Number of epochs
+    --window, -w, {int} : Window size
+    --batch_size, -b, {int} : Batch size
+    --verbose, -v, {int} : Verbose mode
+
 Example of use :
-python Model_training_features.py -s genesHS37 -m myModel1 -f GENE -d start
+python Model_training_features.py -r myResults -s Clin Maca LeCa -m Conv -f EXON -d start
 """
 
 import numpy as np
@@ -22,15 +34,17 @@ from ModuleLibrary.data_loaders import load_data_features
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-s', '--results',
+    parser.add_argument('-r', '--results',
                         help="Results suffix")
+    parser.add_argument('-s','--species', nargs='+', required=True,
+                        help='Species list',)
     parser.add_argument('-m', '--model',
                         help="Model architecture to use")
     parser.add_argument('-f', '--features', default='GENE',
                         help="Features to use")
     parser.add_argument('-d', '--mode', default='start',
                         help="mode to use")
-    parser.add_argument('-r', '--ratio', default=100, type=int,
+    parser.add_argument('-t', '--ratio', default=100, type=int,
                         help="Labels ratio")
     parser.add_argument('-e', '--epochs', default=30, type=int,
                         help="Number of epochs")
@@ -38,35 +52,13 @@ def parse_arguments():
                         help="Window size")
     parser.add_argument('-b', '--batch_size', default=2048, type=int,
                         help="Batch size")
-    parser.add_argument('-v', '--validation', default=0.15, type=float,
-                        help="Validation ratio")    
+    parser.add_argument('-v', '--verbose', default=1, type=int,
+                        help="Verbose mode")  
     return parser.parse_args()
 
 def main():
 
     args = parse_arguments()
-
-    species_list = [#'Maca',
-                    'HS37', 
-                    #'Call', 
-                    #'LeCa',
-                    #'PanP', 
-                    #'Asia',
-                    #'ASM2', 
-                    #'ASM7',
-                    #'Clin', 
-                    #'Kami', 
-                    #'Mmul', 
-                    #'Panu',
-                    #'Tgel', 
-                    #'Cani',
-                    #'Dani',
-                    #'Equi',
-                    #'Feli',
-                    #'Gall',
-                    #'MusM',
-                    #'Orni'
-                    ]
     
     window = args.window
     if window % 2 == 0:
@@ -82,12 +74,12 @@ def main():
     model.summary() 
     
     print('Loading data')
-    data, labels,  train_indexes, val_indexes = load_data_features(species_list, 
-                                                                    window, 
-                                                                    args.ratio, 
-                                                                    args.validation,
-                                                                    args.features,
-                                                                    args.mode)
+    data, labels,  train_indexes, val_indexes = load_data_features(args.species, 
+                                                                   window, 
+                                                                   args.ratio, 
+                                                                   0.15,
+                                                                   args.features,
+                                                                   args.mode)
 
     train_generator = Generator_Features(indexes = train_indexes, 
                                          labels = labels,
@@ -102,11 +94,6 @@ def main():
                                        batch_size = args.batch_size,
                                        window = window,
                                        shuffle = True)
-
-
-    
-
-
 
     path = f'Results/{args.results}'
     try:
@@ -124,13 +111,12 @@ def main():
                         batch_size =  args.batch_size,
                         validation_data = val_generator,
                         callbacks = callbacks,
-                        verbose = 1, 
+                        verbose = args.verbose, 
                         class_weight = class_weights(args.ratio))
 
     # Results saving
     print(f'\nSaving results in : {path}')
     model.save(f'{path}/model.hdf5')
-
     np.save(f'{path}/loss.npy', history.history['loss'])
     np.save(f'{path}/acc.npy', history.history['accuracy'])
     np.save(f'{path}/MCC.npy', history.history['MCC'])

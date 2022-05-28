@@ -66,7 +66,7 @@ class Generator_Coverage(Sequence):
     '''
     def __init__(self, indexes, data, labels, batch_size,
                  window, shuffle=True, data_augment=False):
-        self.dim = (window,4)
+        self.dim = (window,4,1)
         self.list_IDs = indexes
         self.batch_size = batch_size
         self.labels = labels
@@ -111,10 +111,11 @@ class Generator_Prediction_Features(Sequence):
     each epoch.
     '''
     def __init__(self, data, batch_size, window):
-        self.dim = (window,4)
+        self.dim = (window,4,1)
         self.batch_size = batch_size
         self.data = data
         self.on_epoch_end()
+        print(len(self.data))
         
     def __len__(self):
         return int(np.floor(len(self.data) / self.batch_size)) + 1
@@ -150,18 +151,17 @@ class Generator_Prediction_Coverage(Sequence):
     Each sample is randomly selected once and only once 
     each epoch.
     '''
-    def __init__(self, data, batch_size, window, mode):
+    def __init__(self, data, batch_size, window):
         self.dna_dim = (window, 4, 1)
-        self.pred_dim = (window, mode*2, 1)
         self.batch_size = batch_size
         self.data = data
         self.on_epoch_end()
         
     def __len__(self):
-        return int(np.floor(len(self.data[0]) / self.batch_size)) + 1
+        return int(np.floor(len(self.data) / self.batch_size)) + 1
 
     def get_last_batch_size(self):
-        last_batch_size = len(self.data[0])-(self.batch_size*(self.__len__()-1))
+        last_batch_size = len(self.data)-(self.batch_size*(self.__len__()-1))
         return last_batch_size
 
     def __getitem__(self, index):
@@ -171,16 +171,14 @@ class Generator_Prediction_Coverage(Sequence):
         else:
             batch_indexes = self.indexes[index*self.batch_size:
                                         (index+1)*self.batch_size]
-        DNA, PRED = self.__data_generation(batch_indexes)
-        return [DNA, PRED]
+        DATA = self.__data_generation(batch_indexes)
+        return DATA
 
     def __data_generation(self, batch_indexes):
-        DNA = np.empty((self.batch_size, *self.dna_dim), dtype='int8')
-        PRED = np.empty((self.batch_size, *self.pred_dim), dtype=float)
+        DATA = np.empty((self.batch_size, *self.dna_dim), dtype='int8')
         for i, ID in enumerate(batch_indexes):
-            DNA[i,] = self.data[0][ID]
-            PRED[i,] = self.data[1][ID]
-        return DNA, PRED
+            DATA[i,] = self.data[ID]
+        return DATA
 
     def on_epoch_end(self):
-        self.indexes = np.arange(len(self.data[0]))
+        self.indexes = np.arange(len(self.data))

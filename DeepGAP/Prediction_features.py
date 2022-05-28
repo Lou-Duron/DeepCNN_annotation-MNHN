@@ -5,12 +5,18 @@
 Created on Wen Feb 23 14:44 2022
 @author: Lou Duron
 
-python Prediction_features.py -p multi3_RNA_start -s Panu -r test
+Features coverage prediction on chromosome:
+    --prefix, -p, {str} : Result prefix to use
+    --species, -s, {str} : Species ID to use
+    --chromosome, -c, {str} : Chromosome to use
+    --reverse, -r : Reverse results for complement reverse sequences
+    --mcc, -m : Use best metrics model instead of last
+
+python Prediction_features.py -p res_example -s Clin -c X -m
 """
 
 import numpy as np
 import argparse
-import os
 import sys
 sys.path.insert(0,'..')
 from tensorflow import keras
@@ -26,8 +32,6 @@ def parse_arguments():
                         help="Target species")
     parser.add_argument('-c', '--chromosome', type=str,
                         help="Taget chromosome")
-    parser.add_argument('-r', '--result', 
-                        help="Results prefix")
     parser.add_argument('-v', '--reverse', action='store_true',
                         help="Predict on strand -")
     parser.add_argument('-m', '--mcc', action='store_true',
@@ -50,56 +54,23 @@ def main():
     window_size = model.get_layer(index=0).input_shape[1]
 
     print('Loading data')
+    data = load_data_one_chr(args.species, args.chromosome, window_size,
+                                args.reverse)
 
-    if args.chromosome is not None:
+    pred_generator = Generator_Prediction_Features(data = data, 
+                                            batch_size = 1024,
+                                            window = window_size)
 
-        data = load_data_one_chr(args.species, args.chromosome, window_size,
-                                 args.reverse)
+    prediction = model.predict(pred_generator, verbose=1)
 
-
-        pred_generator = Generator_Prediction_Features(data = data, 
-                                              batch_size = 2048,
-                                              window = window_size)
-
-        prediction = model.predict(pred_generator, verbose=1)
-
-        assert len(prediction) == len(data), 'Data and prediciton length are not the same'
-
-        if args.reverse:
-            prediction = prediction[::-1]
-
-        np.save(f'Predictions/{args.result}.npy', prediction)         
+    if args.reverse:
+        prediction = prediction[::-1]
+        path = f'Predictions/{args.prefix}_{args.species}_chr{args.chromosome}_reverse_pred.npy'
     else:
+        path = f'Predictions/{args.prefix}_{args.species}_chr{args.chromosome}_pred.npy'
 
-        files = os.listdir(f'Data/DNA/{args.species}/one_hot')
-        path = f'Predictions/{args.result}'
-
-        try:
-            os.mkdir(path)
-        except:
-            print("\nOverwriting results\n")
-
-        for file in files:
-            chr_id = file.replace('.npy','')
-            chr_id = chr_id.replace('chr','')
-            data = load_data_one_chr(args.species, chr_id, window_size,
-                                     args.reverse, padding=True)
-
-            pred_generator = Generator_Prediction(data = data, 
-                                                  batch_size = 2048,
-                                                  window = window_size)
-
-            print(f'Predicting chromosome {chr_id}')
-
-            prediction = model.predict(pred_generator, verbose=1)
-
-            assert len(prediction) == len(data), 'Data and prediciton length are not the same'
-
-            if args.reverse:
-                prediction = prediction[::-1]
-
-            np.save(f'{path}/chr{chr_id}.npy', prediction)
-
+    np.save(path, prediction)         
+    
     
 if __name__ == '__main__':
     main()

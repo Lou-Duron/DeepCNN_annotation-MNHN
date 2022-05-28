@@ -20,7 +20,7 @@ def load_data_one_chr(species, chr, window, reverse=False):
     be one hot encoded and loaded in a vectorized sliding window for 
     better performances.
     '''
-    f = np.load(f'Data/DNA/{species}/one_hot/chr{chr}.npy')
+    f = np.load(f'../Data/DNA/{species}/one_hot/chr{chr}.npy')
     f = np.append(np.zeros((window//2,4),dtype='int8'), f, axis=0)
     f = np.append(f, np.zeros((window//2,4),dtype='int8'), axis=0)
     if reverse:
@@ -32,7 +32,7 @@ def load_data_one_chr(species, chr, window, reverse=False):
     return data
 
 
-def load_data_features_position(species_list, window, ratio, validation, 
+def load_data_features(species_list, window, ratio, validation, 
                                 features, mode):
     '''
     Load the corresponding data for feature position prediction to give 
@@ -45,8 +45,8 @@ def load_data_features_position(species_list, window, ratio, validation,
     total_len = 0
 
     for species in species_list:
-        files = os.listdir(f'Data/DNA/{species}/one_hot')
-        annot = pd.read_csv(f'Data/Annotations/{species}/{features}.csv', 
+        files = os.listdir(f'../Data/DNA/{species}/one_hot')
+        annot = pd.read_csv(f'../Data/Annotations/{species}/{features}.csv', 
                             sep = ',')
         annot = annot.drop_duplicates(subset=['chr', 'stop', 'start', 'strand'],
                                       keep='last') 
@@ -58,7 +58,7 @@ def load_data_features_position(species_list, window, ratio, validation,
         for i, f in enumerate(files):
             print(f'{species} : {i+1}/{len(files)}', end = '\r')
             
-            chr = np.load(f'Data/DNA/{species}/one_hot/{f}')
+            chr = np.load(f'../Data/DNA/{species}/one_hot/{f}')
             data = np.append(data, chr, axis=0)
             data = np.append(data, np.zeros((window//2,4),dtype='int8'), axis=0)
 
@@ -97,6 +97,7 @@ def load_data_features_position(species_list, window, ratio, validation,
             indexes_chr = indexes_chr + total_len
             indexes = np.append(indexes, indexes_chr)
             total_len += len(chr) + (window // 2)
+            
 
     data = sliding_window_view(data, (window,4), axis=(0,1))
     data = data.reshape(data.shape[0],
@@ -113,7 +114,7 @@ def load_data_features_position(species_list, window, ratio, validation,
     return data, labels, train_indexes, val_indexes
     
 
-def load_data_coverage(species_list, window, step, validation, mode, 
+def load_data_coverage(species_list, window, step, validation, 
                        chr_nb, features):
     '''
     Load the corresponding data for coverage prediction to give to a training 
@@ -121,14 +122,14 @@ def load_data_coverage(species_list, window, step, validation, mode,
     sliding window for better performances.
     '''
     dna = np.zeros((window//2,4),dtype='int8')
-    pred = np.zeros((window//2,mode*2),dtype='float32')
     indexes = np.array([], dtype=int)
     labels = np.array([], dtype='int8')
     total_len = 0
 
     for species in species_list:
-        files = os.listdir(f'Data/DNA/{species}/one_hot')
-        annot = pd.read_csv(f'Data/Annotations/{species}/{features}.csv',
+        
+        files = os.listdir(f'../Data/DNA/{species}/one_hot')
+        annot = pd.read_csv(f'../Data/Annotations/{species}/{features}.csv',
                             sep = ',')
         annot = annot.drop_duplicates(subset=['chr', 'stop', 'start', 'strand'],
                                       keep='last')
@@ -140,7 +141,7 @@ def load_data_coverage(species_list, window, step, validation, mode,
         for i, f in enumerate(files):
             print(f'{species} : {i+1}/{len(files)}', end = '\r')
 
-            chr = np.load(f'Data/DNA/{species}/one_hot/{f}')
+            chr = np.load(f'../Data/DNA/{species}/one_hot/{f}')
             dna = np.append(dna, chr, axis=0)
             dna = np.append(dna, np.zeros((window//2,4),dtype='int8'), axis=0)
 
@@ -163,24 +164,6 @@ def load_data_coverage(species_list, window, step, validation, mode,
             indexes = np.append(indexes, np.arange(total_len, total_len+len(chr)+1,
                                 step= step))
             total_len += len(chr) + (window // 2)
-
-            
-            if mode > 0:
-                pred_list = []
-                pred_list.append(np.load(f'Predictions/{species}_gene_start/{f}'))
-                pred_list.append(np.load(f'Predictions/{species}_gene_stop/{f}'))
-                if mode > 1:
-                    pred_list.append(np.load(f'Predictions/{species}_exon_start/{f}'))
-                    pred_list.append(np.load(f'Predictions/{species}_exon_stop/{f}'))
-                if mode > 2:
-                    pred_list.append(np.load(f'Predictions/{species}_rna_start/{f}'))
-                    pred_list.append(np.load(f'Predictions/{species}_rna_stop/{f}'))
-
-                chr_pred = np.array(pred_list)
-                chr_pred = np.reshape(chr_pred.flatten(order='F'), (chr_pred.shape[1],
-                                      chr_pred.shape[0]))
-                pred = np.append(pred, chr_pred, axis=0)
-                pred = np.append(pred, np.zeros((window//2,mode*2),dtype='float32'), axis=0)
                 
             if chr_nb > 0 and i == chr_nb - 1:
                 break
@@ -189,12 +172,7 @@ def load_data_coverage(species_list, window, step, validation, mode,
     dna = dna.reshape(dna.shape[0],
                       dna.shape[2], 
                       dna.shape[3],1)
-    if mode > 0:
-        pred = sliding_window_view(pred, (window,mode*2), axis=(0,1))
-        pred = pred.reshape(pred.shape[0],
-                        pred.shape[2], 
-                        pred.shape[3],1)         
-
+  
     labels = labels[:-(window//2)]
     tmp = labels[indexes]
     ratio = len(tmp[tmp==0])/len(tmp[tmp==1])
@@ -204,6 +182,6 @@ def load_data_coverage(species_list, window, step, validation, mode,
     train_indexes = indexes[int(len(indexes)*validation):]
     val_indexes = indexes[:int(len(indexes)*validation)]
 
-    return dna, pred, labels, ratio, train_indexes, val_indexes
+    return dna, labels, ratio, train_indexes, val_indexes
 
     
