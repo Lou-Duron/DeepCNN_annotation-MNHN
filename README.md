@@ -23,5 +23,3 @@ If your computer is equiped with GPU :
 - **Tensoflow-gpu** 2.5.0
 - **Cudatoolkit** 11.3.1
 - **Cudnn** 8.2.1.32
-
-
