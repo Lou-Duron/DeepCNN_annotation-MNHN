@@ -67,7 +67,7 @@ def prediction_density(pred_files, species, chr, annotation, win_range,
     - mode {str}: genomic strand to use (all, strand+ or strand-)
     - annot_end {bool}: if True will check end of feature (example: Gene end)
     '''
-    annot = pd.read_csv(f'Data/Annotations/{species}/{annotation}.csv',
+    annot = pd.read_csv(f'../Data/Annotations/{species}/{annotation}.csv',
                         sep = ',')
     annot = annot.drop_duplicates(subset=['chr', 'start', 'stop', 'strand'],
                                   keep='last') 
@@ -112,13 +112,15 @@ def prediction_density(pred_files, species, chr, annotation, win_range,
             plot = plt
             plot.title(name)
         if mode == 'all' or mode == 'strand+':
-            plot.plot(x,res_5, label='Strand +')
+            plot.plot(x,res_5)#, label='Strand +')
         if mode == 'all' or mode == 'strand-':
             plot.plot(x,res_3, label='Strand -')
         if mode == 'all':
             plot.plot(x,res_all, label='All')
         if len(pred_files) > 1:
             plot.set_title(name)
+        axis.set_xlabel('Position around feature (bp)')
+        axis.set_ylabel('Mean of the prediction value')
         plot.legend()
     plt.show
 
@@ -130,7 +132,7 @@ def prediction_quality(pred_files, species, chr, mode='all'):
     - chr {str/int}: chromosome number
     - mode {str}: genomic strand to use (all, gene_strand+, exon_strand-...etc)
     '''
-    positions = np.load(f'Data/Positions/{species}/{mode}/chr{chr}.npy')
+    positions = np.load(f'../Data/Positions/{species}/{mode}/chr{chr}.npy')
             
     figure, axis = plt.subplots(1, len(pred_files), constrained_layout=True, 
                                 figsize=(len(pred_files)*5,4))
@@ -146,8 +148,9 @@ def prediction_quality(pred_files, species, chr, mode='all'):
 
         pred_pos = pred[pos]
         pred_neg = pred[neg]
+
         x = [pred_pos, pred_neg]
-        labels = [f'Inside', f'Outside']
+        labels = [f'Inside gene', f'Outside gene']
 
         if len(pred_files) > 1:
             plot = axis[num]
@@ -155,10 +158,12 @@ def prediction_quality(pred_files, species, chr, mode='all'):
             plot = plt
             plot.title(name)
 
-        plot.boxplot(x, labels=labels, showmeans=True, meanline=True, 
+        plot.boxplot(x, labels=labels, showmeans=True, meanline=False, 
                      widths=0.6, showfliers=False)
         if len(pred_files) > 1:
             plot.set_title(name)
+        axis.set_xlabel('Center position of the window ')
+        axis.set_ylabel('Prediction value')
     plt.show
 
 class Chromosome_prediction():
@@ -175,7 +180,7 @@ class Chromosome_prediction():
         self.GC = GC
         self.mode = mode
         self.annot = annotation_type
-        f = h5py.File(f'Data/DNA/{species}/hdf5/chr{chr_nb}.hdf5','r')
+        f = h5py.File(f'../Data/DNA/{species}/hdf5/chr{chr_nb}.hdf5','r')
         DNA = np.array(f['data'])
         f.close()
         DNA = DNA.reshape(DNA.shape[0],)
@@ -196,7 +201,7 @@ class Chromosome_prediction():
             self.preds.append(pred)
 
     def update_annotation(self, annotation_type):
-        annot = pd.read_csv(f'Data/Annotations/{self.species}/{annotation_type}.csv',
+        annot = pd.read_csv(f'../Data/Annotations/{self.species}/{annotation_type}.csv',
                             sep = ',')
         annot = annot.drop_duplicates(subset=['chr','stop', 'start', 'strand'],
                                       keep='last') 
@@ -237,8 +242,8 @@ class Chromosome_prediction():
             fill_3_vec(index_3_pos)
         
 
-            self.pos_5 = pos_5
-            self.pos_3 = pos_3*0.98
+            self.pos_5 = pos_5 * 1.05
+            self.pos_3 = pos_3 * 1.1
             self.nuc = np.arange(self.DNA_size)
         else:
             pos_5 = []
@@ -279,14 +284,15 @@ class Chromosome_prediction():
     def update_plots(self, plot_start, plot_range):
         x = plot_start
         y = plot_range
-        plt.figure(figsize=(30,4))
+        plt.figure(figsize=(15,4))
         plt.ylim([0,1.1])
+        
         if self.mode == 'all':
-            plt.plot(self.nuc[x:x+y], self.pos_5[x:x+y], label='Strand +')
+            plt.plot(self.nuc[x:x+y], self.pos_5[x:x+y], label='Strand +') 
             plt.plot(self.nuc[x:x+y], self.pos_3[x:x+y], label='Strand -')
         elif self.mode == 'strand+':
             if self.annot != 'RNA':
-                plt.plot(self.nuc[x:x+y], self.pos_5[x:x+y], label='Strand +')
+                plt.plot(self.nuc[x:x+y], self.pos_5[x:x+y], label='True position') ##
             else:
                 for i in range(5):
                     plt.plot(self.nuc[x:x+y], self.pos_5[i][x:x+y])
@@ -298,5 +304,7 @@ class Chromosome_prediction():
             name = self.files_list[i]
             name = name.replace('.npy','')
             plt.plot(self.nuc[x:x+y], pred[x:x+y], label=name)
+        plt.xlabel('Position on human chromosome 1 (bp)')
+        plt.ylabel('Prediction value')
         plt.legend()
         plt.show()

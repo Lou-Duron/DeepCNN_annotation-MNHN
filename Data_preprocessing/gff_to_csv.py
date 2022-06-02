@@ -8,7 +8,7 @@ Created on Thu Jan 12 14:07 2022
 This program creates an annotation file(.csv) from gff files
 
 Example of use :
-python Data_treatment/gff_to_csv.py  -o RNA -t mRNA
+python gff_to_csv.py -o RNA -t mRNA -s HS38
 """
 
 import argparse
@@ -27,12 +27,12 @@ def parse_arguments():
 
 def main():
     args = parse_arguments()
-    files = os.listdir(f'Data/Annotations/{args.species}/annot')
-    out_file = open(f'Data/Annotations/{args.species}/{args.output}.csv','w')
+    files = os.listdir(f'../Data/Annotations/{args.species}/annot')
+    out_file = open(f'../Data/Annotations/{args.species}/{args.output}.csv','w')
     out_file.write("chr,start,stop,strand\n")
     for file in files:
         print(f'Converting the file : {file}')
-        df = pd.read_csv(f'Data/Annotations/{args.species}/annot/{file}',
+        df = pd.read_csv(f'../Data/Annotations/{args.species}/annot/{file}',
                          sep = '\t', dtype={5: str})
         chr_name = file.replace('.gff3','')
         chr_name = file.replace('.gff','')

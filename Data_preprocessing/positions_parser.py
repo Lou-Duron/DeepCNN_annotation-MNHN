@@ -32,18 +32,18 @@ def parse_arguments():
 def main():
     args = parse_arguments()
 
-    path = f'Data/Positions/{args.species}/{args.annotation}_{args.strand}'
+    path = f'../Data/Positions/{args.species}/{args.annotation}_{args.strand}'
     try:
         os.mkdir(path)
     except:
         print("Overwriting")
 
     # Get annotation dataframe and remove duplicates
-    annot = pd.read_csv(f'Data/Annotations/{args.species}/{args.annotation}.csv', sep = ',')
+    annot = pd.read_csv(f'../Data/Annotations/{args.species}/{args.annotation}.csv', sep = ',')
     annot = annot.drop_duplicates(subset=['chr', 'start','stop', 'strand'], keep='last') 
 
     # Get list of chromosome
-    chromosomes = os.listdir(f'Data/DNA/{args.species}/hdf5')
+    chromosomes = os.listdir(f'../Data/DNA/{args.species}/hdf5')
 
     # For each chromosome
     for num, chr in enumerate(chromosomes):
@@ -54,7 +54,7 @@ def main():
         print(f"Chromosome : {chr_id} ({num+1}/{len(chromosomes)})")
 
         # Get chromosome specific DNA sequence
-        f = h5py.File(f'Data/DNA/{args.species}/hdf5/{chr}','r')
+        f = h5py.File(f'../Data/DNA/{args.species}/hdf5/{chr}','r')
         DNA = np.array(f['data'])
         f.close()
         DNA = DNA.reshape(DNA.shape[0],)

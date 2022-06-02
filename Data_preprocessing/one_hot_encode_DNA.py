@@ -16,7 +16,9 @@ import argparse
 import os
 import h5py
 import numpy as np
-from ModuleLibrary.utils import one_hot_encoding_seq
+import sys
+sys.path.insert(0,'..')
+from ModuleLibrary.utils import one_hot_DNA
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
@@ -42,7 +44,7 @@ def main():
         DNA = DNA.reshape(DNA.shape[0],)
         DNA = DNA.astype('int8')
 
-        OH = one_hot_encoding_seq(DNA)
+        OH = one_hot_DNA(DNA)
 
         name = file.replace('.hdf5','')
 

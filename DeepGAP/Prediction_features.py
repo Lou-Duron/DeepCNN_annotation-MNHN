@@ -51,7 +51,8 @@ def main():
                                     custom_objects={'MCC': MCC,
                                                     'BA' : BA})
 
-    window_size = model.get_layer(index=0).input_shape[1]
+
+    window_size = model.get_layer(index=0).input_shape[0][1]
 
     print('Loading data')
     data = load_data_one_chr(args.species, args.chromosome, window_size,

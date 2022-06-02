@@ -21,7 +21,7 @@ def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', '--input',
                         help="Input file in gff format")     
-    parser.add_argument('-s', '--s',
+    parser.add_argument('-s', '--species',
                         help="Species name")                 
     return parser.parse_args()
 
@@ -32,25 +32,32 @@ def main():
     ID_list = []
     files = []
 
-    for element in os.listdir(f'Data/DNA/{species}/fasta'):
+    for element in os.listdir(f'../Data/DNA/{species}/fasta'):
         if re.match(r'chr\w+.?\.fa', element):
             num = re.search('chr\w+.?\.', element)
             chr_list.append(num.group(0)) 
 
     
     for chr in chr_list:
-        with open(f'Data/DNA/{species}/fasta/{chr}fa') as f:
+        with open(f'../Data/DNA/{species}/fasta/{chr}fa') as f:
             for line in f:
                 ID = line.split(' ')[0]
                 ID = ID.replace('>','')
                 ID_list.append(ID)
                 break
 
-    os.mkdir(f'Data/Annotations/{species}')
-    os.mkdir(f'Data/Annotations/{species}/annot')
+    try:
+        os.mkdir(f'../Data/Annotations/{species}')
+    except:
+        print("\nOverwriting\n")
+    try:
+        os.mkdir(f'../Data/Annotations/{species}/annot')
+    except:
+        print("\nOverwriting\n")
+
     
     for chr in chr_list:
-        file = open(f"Data/Annotations/{species}/annot/{chr}gff", 'w')
+        file = open(f"../Data/Annotations/{species}/annot/{chr}gff", 'w')
         file.write("seqid\tsource\ttype\tstart\tstop\tscore\tstrand\tphase\tattibutes\n")
         files.append(file)
 

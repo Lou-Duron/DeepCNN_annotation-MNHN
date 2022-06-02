@@ -55,7 +55,7 @@ def main():
 
     print('Loading data')
     data = load_data_one_chr(args.species, args.chromosome, window_size)
-    print(data.shape)
+
 
     generator = Generator_Prediction_Coverage(data = data, 
                                               batch_size = 1024,

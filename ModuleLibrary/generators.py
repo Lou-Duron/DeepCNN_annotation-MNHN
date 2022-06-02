@@ -115,7 +115,6 @@ class Generator_Prediction_Features(Sequence):
         self.batch_size = batch_size
         self.data = data
         self.on_epoch_end()
-        print(len(self.data))
         
     def __len__(self):
         return int(np.floor(len(self.data) / self.batch_size)) + 1
@@ -135,7 +134,7 @@ class Generator_Prediction_Features(Sequence):
         return X
 
     def __data_generation(self, batch_indexes):
-        X = np.empty((len(batch_indexes), *self.dim, 1), dtype='int8')
+        X = np.empty((len(batch_indexes), *self.dim), dtype='int8')
         for i, ID in enumerate(batch_indexes):
             X[i,] = self.data[ID]
         return X

@@ -71,7 +71,6 @@ class Explorer():
                 layer.input = self.layers[i-1].output
         self.layers.reverse()
         for i, layer in enumerate(self.layers):
-            print(i, len(self.layers))
             layer.compute_contrib()
             if i != len(self.layers) - 1:
                 self.layers[i+1].output_contrib = layer.input_contrib
@@ -86,7 +85,7 @@ class Explorer():
         plt.figure(figsize=(34,1), dpi= 200)
         plt.imshow(self.layers[-1].input_contrib, cmap=cmap, aspect='auto',
                    vmin=-1, vmax=1)
-        plt.xticks(np.arange(0, 10001,10))
+        plt.xticks(np.arange(0, 301,10))
         plt.yticks([0,1,2,3], ['a','t','g','c'])
         plt.colorbar()
         plt.show()
@@ -134,9 +133,7 @@ class Conv(Layer):
         else:
             input = padding_slidding(self.input, self.kernel[0])
         if self.first:
-            print(input.shape, self.weights.shape, self.output_contrib.shape)
-            #self.input_contrib = np.einsum('ijk,kl,il->ijk', input, self.weights, self.output_contrib)
-            self.input_contrib = np.einsum('ijk,jkl,il->ijk', 
+            self.input_contrib = np.einsum('ijk,kl,il->ijk', 
                                            input, 
                                            self.weights, 
                                            self.output_contrib)
@@ -176,7 +173,6 @@ class MaxPooling(Layer):
         super().compute_contrib()
         self.input_contrib = np.zeros((self.input.shape[0], 
                                        self.input.shape[1])) 
-        print(self.input_contrib.shape)
         if self.input_contrib.shape[0] % 2 == 0:
             size = self.input_contrib.shape[0]
         else:
