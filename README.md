@@ -8,7 +8,7 @@ DeepGAP (Deep Genome Annotation Package) aims to propose new solution for eukary
 
 DeepGATE (Deep Genome Annotation Tool Explorer) is a tool developed to explore DeepGAP's deep CNN, allowing users to identify sequence motifs used by the model for the prediciton. 
 
-## Mimimal configuration
+## Minimal configuration
 
 - **Python** 3.8 
 - **Biopython** 1.78
