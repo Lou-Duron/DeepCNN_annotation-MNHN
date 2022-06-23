@@ -86,9 +86,9 @@ class Explorer():
         cim = cim[cim.shape[0]//2, 50:390, :]
         cmap = mcolors.ListedColormap(cim)
         plt.figure(figsize=(34,1), dpi= 200)
-        plt.imshow(self.layers[0].input_contrib[:301], cmap=cmap, aspect='auto',
+        plt.imshow(self.layers[0].input_contrib, cmap=cmap, aspect='auto',
                    vmin=-1, vmax=1)
-        plt.xticks(np.arange(0, 301,10))
+        plt.xticks(np.arange(0, 2001,10))
         plt.yticks([0,1,2,3], ['a','t','g','c'])
         plt.colorbar()
         plt.show()
