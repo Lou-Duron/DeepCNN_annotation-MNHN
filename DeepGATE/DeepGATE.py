@@ -24,14 +24,13 @@ from ModuleLibrary.metrics import MCC, BA
 
 class Explorer():
 
-    def __init__(self, model_path):
-        self.model = load_model(model_path, custom_objects={'MCC': MCC, 'BA' : BA})
+    def __init__(self, model_path, custom_objects):
+        self.model = load_model(model_path, custom_objects=custom_objects)
         self.model_w = h5py.File(model_path,'r')
         self.layers = []
         self.build_model()
         
     def build_model(self):
-        first_conv = True
         for layer in self.model.get_config()['layers']:
 
             if layer['class_name'].startswith('Conv'):
@@ -39,8 +38,7 @@ class Explorer():
                 kernel = layer['config']['kernel_size']
                 padding = layer['config']['padding']
                 self.layers.append(Conv(name, self.model_w, kernel,
-                                        padding, first_conv))
-                first_conv = False
+                                        padding))
 
             elif layer['class_name'].startswith('MaxPooling'):
                 name = layer['config']['name']
@@ -62,28 +60,33 @@ class Explorer():
             else:
                 continue
 
-    def explore(self, data):
-
-        data = data.reshape(1,data.shape[0], data.shape[1],1)
+    def get_inputs_and_outputs(self, data):
         for i, layer in enumerate(self.layers):
             layer.set_output(self.model, data)
             if i > 0:
                 layer.input = self.layers[i-1].output
-        self.layers.reverse()
-        for i, layer in enumerate(self.layers):
+            else:
+                layer.input = np.zeros(1)
+
+    def explore(self, data):
+        data = data.reshape(1,data.shape[0], data.shape[1],1)
+        self.get_inputs_and_outputs(data)
+        layers_rev = list(reversed(self.layers))
+        for i, layer in enumerate(layers_rev):
             layer.compute_contrib()
             if i != len(self.layers) - 1:
-                self.layers[i+1].output_contrib = layer.input_contrib
+                layers_rev[i+1].output_contrib = layer.input_contrib
+
         self.plot()
        
 
     def plot(self):
 
-        cim = plt.imread("colorbar.png")
+        cim = plt.imread("DeepGATE/colorbar.png")
         cim = cim[cim.shape[0]//2, 50:390, :]
         cmap = mcolors.ListedColormap(cim)
         plt.figure(figsize=(34,1), dpi= 200)
-        plt.imshow(self.layers[-1].input_contrib, cmap=cmap, aspect='auto',
+        plt.imshow(self.layers[0].input_contrib[:301], cmap=cmap, aspect='auto',
                    vmin=-1, vmax=1)
         plt.xticks(np.arange(0, 301,10))
         plt.yticks([0,1,2,3], ['a','t','g','c'])
@@ -114,13 +117,12 @@ class Layer():
 
 class Conv(Layer):
 
-    def __init__(self, name, model_w, kernel, padding, first):
+    def __init__(self, name, model_w, kernel, padding):
         super().__init__(name)
         self.set_weights(model_w)
         self.set_bias(model_w)
         self.kernel = kernel
         self.padding = padding
-        self.first = first
 
     def compute_contrib(self):
         super().compute_contrib()
@@ -130,18 +132,23 @@ class Conv(Layer):
             input = input.flatten(order='K').reshape((input.shape[0],
                                                       input.shape[2],
                                                       input.shape[1]))
+            input_contrib_tmp = np.einsum('ijk,jkl,il->ijk', 
+                                        input, 
+                                        self.weights, 
+                                        self.output_contrib)
+            self.input_contrib = np.zeros((self.input.shape[0], self.input.shape[1]))
+            for i in range(input_contrib_tmp.shape[0]):
+                step = input_contrib_tmp.shape[1]
+                self.input_contrib[i:i+step] += input_contrib_tmp[i]
+            
+            
         else:
             input = padding_slidding(self.input, self.kernel[0])
-        if self.first:
-            self.input_contrib = np.einsum('ijk,kl,il->ijk', 
-                                           input, 
-                                           self.weights, 
-                                           self.output_contrib)
-        else:       
             self.input_contrib = np.einsum('ijk,jkl,il->ik', 
                                            input, 
                                            self.weights, 
                                            self.output_contrib)
+            
 
 class Dense(Layer):
 
@@ -204,11 +211,7 @@ class Input(Layer):
 
     def compute_contrib(self): 
         super().compute_contrib()
-        self.input_contrib = np.zeros((self.output.shape))
-        for i in range(self.output_contrib.shape[0]):
-            self.input_contrib[i:i+6] = np.add(self.input_contrib[i:i+6], 
-                                              self.output_contrib[i])
-
+        self.input_contrib = self.output_contrib
         maxvalue = max(float(np.max(self.input_contrib)),
                        float(-np.min(self.input_contrib)))
         for i in range(len(self.input_contrib)):
