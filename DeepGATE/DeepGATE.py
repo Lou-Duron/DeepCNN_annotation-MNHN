@@ -5,9 +5,9 @@
 Created on Wed Apr 27 10:52 2022
 @author: Lou Duron
 
-This module contains DeepGATE, a tool made for explore
-DeepGAP neural networks to indentify sequences motifs
-used by the network for the preditction.
+This module contains DeepGATE, a tool made to explore
+DeepGAP's neural networks to indentify sequences motifs
+used by the CNN for the preditction.
 """
 
 import numpy as np
@@ -20,7 +20,6 @@ import sys
 sys.path.insert(0,'..')
 
 from ModuleLibrary.utils import sliding_window_view, padding_slidding
-from ModuleLibrary.metrics import MCC, BA
 
 class Explorer():
 

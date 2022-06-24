@@ -1,12 +1,12 @@
 Genome wide annotation with deep CNN
 ===
-Lou Duron
+By : Lou Duron
 
 This repository contains two tools, DeepGAP and DeepGATE, developped during my compolsory master's internship at the National Museum of Natural History of Paris. In addition of this tools, a set of scripts is given in order to pre-process data downloaded from RefSeq.
 
-DeepGAP (Deep Genome Annotation Package) aims to propose new solution for eukaryotic genome wide annotation using deep convolutional neural networks. It has been sucessfully used for protein coding gene predicition in primate genomes (results in master's thesis), but has been developped to be as flexible as possible and could be used in many other ways. Please note that this tool is not finished.
+DeepGAP (Deep Genome Annotation Package) aims to propose new solutions for eukaryotic genome wide annotation using deep convolutional neural networks. It has been sucessfully used for protein coding gene and Pre-mRNA splicing site predicition in primate genomes (results in master's thesis). 
 
-DeepGATE (Deep Genome Annotation Tool Explorer) is a tool developed to explore DeepGAP's deep CNN, allowing users to identify sequence motifs used by the model for the prediciton. 
+DeepGATE (Deep Genome Annotation Tool Explorer) is a tool developed to explore DeepGAP's deep CNN, allowing users to identify sequence motifs used by the model for prediciton. 
 
 ## Minimal configuration
 
